@@ -98,6 +98,7 @@ flowchart LR
 | Database | **Neon Postgres** (serverless), `@neondatabase/serverless` HTTP driver | No connection pool to manage from serverless functions |
 | Queue | None — the browser calls `/process` in a loop; leads are claimed with `UPDATE … FOR UPDATE SKIP LOCKED` | No worker or cron needed; safe if two tabs run at once; stuck leads are re-claimed after 2 min |
 | Caching | `domain_cache` table, 7-day TTL, shared across uploads | Re-running or overlapping lists never hit the same site twice |
+| Rate limiting | `rate_limits` table, fixed one-hour windows per visitor | Works across serverless instances without adding a cache service |
 | Scores | Computed on read, not stored | Buy-box edits re-rank instantly |
 | Scraping | `fetch` + `cheerio`, 8 s timeouts, ≤5 pages per site, 6 sites in parallel | Small and fast |
 | AI | **Groq** free tier (`openai/gpt-oss-20b`, falls back to `qwen/qwen3.8-27b`, `openai/gpt-oss-120b` when rate-limited) | Fast inference; rotating models multiplies the free per-model token budget |
@@ -123,6 +124,8 @@ flowchart LR
 
 - **No SSRF.** Uploaded lists are untrusted, so every fetch (and every redirect hop, followed manually) is refused unless the host is a public domain name resolving only to public IPs — no IP literals, `localhost`, private ranges or cloud metadata addresses.
 - **Safe exports.** CSV cells that start with `=`, `+`, `-` or `@` are escaped, so scraped text can't run as a spreadsheet formula.
+- **Per-visitor limits.** Each visitor can create 10 lists and write 30 openers per hour (counted in Postgres, since serverless instances share no memory), so a public demo link can't drain the free AI quota or be used to crawl the web at scale.
+- **Openers always answer.** One 90-second budget covers every retry and rate-limit wait, so the request ends with an opener or a clear "try again" well before the platform's time limit.
 - **Bounded work.** Pages are read up to 1.5 MB, one batch runs per job at a time, and openers are only reachable through their job's id.
 - **One bad site can't stall a list.** A crash while checking one company is logged and that lead is scored on its CSV data alone.
 - Inputs are validated at the API boundary (row cap, buy-box sanitising, id formats). Results are reachable only through their unguessable job link; there are no user accounts in this prototype.
@@ -135,7 +138,7 @@ Requirements: Node 20+, a free [Neon](https://neon.tech) database, and a free [G
 ```bash
 npm install
 cp .env.example .env.local   # fill in GROQ_API_KEY, DATABASE_URL, DATABASE_URL_UNPOOLED
-npm run db:migrate           # creates the three tables
+npm run db:migrate           # creates the tables
 npm run dev                  # http://localhost:3000
 npm test                     # normalisation, extraction, scoring, opener and address-filter tests
 ```
@@ -169,7 +172,8 @@ lib/
   score.ts                    fit, readiness, revenue, tiers
   jobs.ts                     storage + batch worker
   groq.ts, opener.ts          LLM client and prompt
-db/schema.sql                 jobs, leads, domain_cache
+  ratelimit.ts                per-visitor hourly limits
+db/schema.sql                 jobs, leads, domain_cache, rate_limits
 data/                         Census revenue benchmarks + provenance
 scripts/                      sample-list builder, migration
 ```
