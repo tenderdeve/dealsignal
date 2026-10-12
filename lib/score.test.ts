@@ -40,7 +40,6 @@ const sig = (over: Partial<Signals> = {}): Signals => ({
   emails: [],
   services: null,
   domainRegistered: null,
-  firstArchived: null,
   mx: true,
   ...over,
 });

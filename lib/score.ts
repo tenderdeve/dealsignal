@@ -107,10 +107,7 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
 
   const founded = s?.foundedYear?.value ?? lead.yearFounded;
   const years = founded ? now - founded : null;
-  const domainYear = [s?.domainRegistered, s?.firstArchived]
-    .filter(Boolean)
-    .map((d) => Number(d!.slice(0, 4)))
-    .sort()[0];
+  const domainYear = s?.domainRegistered ? Number(s.domainRegistered.slice(0, 4)) : undefined;
   const onlineYears = domainYear ? now - domainYear : null;
 
   if (s?.siteStatus === "down") {

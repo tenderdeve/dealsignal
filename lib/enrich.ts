@@ -25,7 +25,6 @@ export type Signals = {
   emails: string[];
   services: string | null;
   domainRegistered: string | null; // ISO date from RDAP
-  firstArchived: string | null; // ISO date of first Wayback capture
   mx: boolean | null;
   aiMissed?: boolean; // AI was needed but every model was busy: retry next run instead of caching
 };
@@ -142,19 +141,6 @@ async function rdapRegistered(domain: string) {
   }
 }
 
-async function firstArchived(domain: string) {
-  try {
-    const res = await fetch(`https://web.archive.org/cdx/search/cdx?url=${domain}&limit=1&fl=timestamp&output=json`, {
-      headers: { "User-Agent": UA },
-      signal: AbortSignal.timeout(8000),
-    });
-    const ts = (await res.json())?.[1]?.[0] as string | undefined;
-    return ts ? `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}` : null;
-  } catch {
-    return null;
-  }
-}
-
 const hasMx = (domain: string) =>
   resolveMx(domain).then((r) => r.length > 0, (e) => (e?.code === "ENOTFOUND" || e?.code === "ENODATA" ? false : null));
 
@@ -209,11 +195,10 @@ export async function enrich(domain: string, website: string | null): Promise<Si
     emails: [],
     services: null,
     domainRegistered: null,
-    firstArchived: null,
     mx: null,
   };
 
-  const records = Promise.all([rdapRegistered(domain), firstArchived(domain), hasMx(domain)]);
+  const records = Promise.all([rdapRegistered(domain), hasMx(domain)]);
 
   const start = website && /^https?:\/\//i.test(website) ? website : `https://${domain}/`;
   let home: Awaited<ReturnType<typeof get>> | null = null;
@@ -278,6 +263,6 @@ export async function enrich(domain: string, website: string | null): Promise<Si
     if (!s.owner || !s.foundedYear) await aiExtract(aiText.trim(), s.pages[1] ?? s.pages[0], s);
   }
 
-  [s.domainRegistered, s.firstArchived, s.mx] = await records;
+  [s.domainRegistered, s.mx] = await records;
   return s;
 }

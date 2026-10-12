@@ -83,7 +83,7 @@ flowchart LR
   B -- loop until done --> P[POST /api/jobs/:id/process<br/>claims 6 leads]
   P --> C{domain_cache<br/>< 7 days?}
   C -- hit --> DB
-  C -- miss --> E[enrich<br/>site crawl · RDAP · Wayback · MX]
+  C -- miss --> E[enrich<br/>site crawl · RDAP · MX]
   E -- rules miss owner/year --> G[Groq LLM<br/>quote-verified extraction]
   E --> DB
   B -- GET /api/jobs/:id --> S[score on read<br/>fit · readiness · tier]
@@ -113,7 +113,7 @@ flowchart LR
 ### Ethical collection
 
 - Identifies itself honestly (`DealSignalBot/0.1`) and respects `robots.txt`.
-- Reads only a company's own public website and public domain records (RDAP, Wayback Machine CDX, DNS MX).
+- Reads only a company's own public website and public domain records (RDAP registration date, DNS MX).
 - Does **not** scrape LinkedIn, solve CAPTCHAs, rotate IPs or spoof a browser to get past bot protection.
 - Openers never speculate about an owner's age, health or retirement.
 

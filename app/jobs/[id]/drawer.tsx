@@ -46,7 +46,6 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
 
   const domainFacts = [
     s?.domainRegistered && `Domain registered ${s.domainRegistered.slice(0, 4)}`,
-    s?.firstArchived && `First archived ${s.firstArchived.slice(0, 4)}`,
     s?.mx === true ? "Domain receives email" : s?.mx === false ? "No mail server on domain" : null,
     s?.siteStatus === "blocked" && "Site blocks automated checks",
   ].filter(Boolean);
