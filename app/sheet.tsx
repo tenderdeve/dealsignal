@@ -5,7 +5,7 @@ type Line = { name: string; note: string; kind: "keep" | "drop" | "later" };
 const LINES: Line[] = [
   { name: "Bacon Roofing", note: "since 1995, owner John Bacon", kind: "keep" },
   { name: "AMERICAN PRIDE ROOFING", note: "duplicate, merged", kind: "drop" },
-  { name: "Frost Brothers Heating & Air", note: "website down", kind: "drop" },
+  { name: "Shelton Electrical Service", note: "website down", kind: "drop" },
   { name: "Brooks Plumbing", note: "family-owned since 1961", kind: "keep" },
   { name: "Apple Roofing", note: "hiring, still growing", kind: "later" },
   { name: "Texaire", note: "site blocks bots, check by hand", kind: "later" },
@@ -44,7 +44,7 @@ export function Sheet() {
         <div className="border-t border-line px-5 py-2 text-sm text-muted">…and 97 more</div>
       </div>
       <figcaption className="mt-4 max-w-md text-sm text-muted">
-        From a real run on the sample: 106 rows became 88 companies, 7 closed businesses were dropped, and 26 were highlighted to call first.
+        From a real run on the sample: 106 rows became 88 companies, 6 closed businesses were dropped, and 26 were highlighted to call first.
       </figcaption>
     </figure>
   );
