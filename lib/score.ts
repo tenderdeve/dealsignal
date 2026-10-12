@@ -192,7 +192,8 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
   const checks = [s?.siteStatus === "ok", founded != null, !!s?.owner, revenue?.basis === "company", lead.phone != null, s?.mx === true];
   const confidence = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
-  const tier: Tier = fit >= 70 && ready >= 50 ? "A" : fit >= 50 && ready >= 25 ? "B" : "C";
+  // Tier A means "fits the buy-box": a wrong industry or state can never be A.
+  const tier: Tier = fit >= 70 && ready >= 50 && industryOk && stateOk ? "A" : fit >= 50 && ready >= 25 ? "B" : "C";
   return { fit, readiness: ready, confidence, tier, revenue, yearsInBusiness: years, reasons };
 }
 

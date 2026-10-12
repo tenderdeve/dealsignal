@@ -52,3 +52,8 @@ test("same website in several cities counts locations", () => {
   ]);
   assert.deepEqual(leads[0].locations, ["Allen", "Frisco"]);
 });
+
+test("short state headers like ST are recognised", () => {
+  assert.equal(mapColumns(["Business Name", "URL", "Town", "ST"]).state, "ST");
+  assert.equal(mapColumns(["Business Name", "URL", "Town", "ST"]).city, "Town");
+});

@@ -36,7 +36,8 @@ export async function processBatch(jobId: string) {
     claimed.map(async ({ id, domain, lead }) => {
       const [hit] = await sql`select signals from domain_cache where domain = ${domain} and fetched_at > now() - interval '7 days'`;
       const signals: Signals = hit?.signals ?? (await enrich(domain, lead.website));
-      if (!hit)
+      // Don't cache a result the AI couldn't finish, so the next run fills the gap.
+      if (!hit && !signals.aiMissed)
         await sql`
           insert into domain_cache (domain, signals) values (${domain}, ${JSON.stringify(signals)})
           on conflict (domain) do update set signals = excluded.signals, fetched_at = now()`;

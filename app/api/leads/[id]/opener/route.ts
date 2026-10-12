@@ -13,7 +13,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   const [row] = await sql`select id, lead, signals, opener, status from leads where id = ${id}`;
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const opener = await writeOpener(row as Row);
-  if (!opener) return NextResponse.json({ error: "AI is busy, try again in a moment" }, { status: 503 });
+  if (!opener) return NextResponse.json({ error: "Couldn't write a fact-checked opener right now. Try again in a moment." }, { status: 503 });
   await sql`update leads set opener = ${opener} where id = ${id}`;
   return NextResponse.json({ opener });
 }

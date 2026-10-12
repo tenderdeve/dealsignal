@@ -3,7 +3,7 @@
 import * as cheerio from "cheerio";
 import { resolveMx } from "node:dns/promises";
 import firstNames from "../data/first-names.json";
-import { chat } from "./groq";
+import { aiEnabled, chat } from "./groq";
 
 export type Evidence<T> = { value: T; source: string; quote: string; via: "site" | "ai" };
 
@@ -27,6 +27,7 @@ export type Signals = {
   domainRegistered: string | null; // ISO date from RDAP
   firstArchived: string | null; // ISO date of first Wayback capture
   mx: boolean | null;
+  aiMissed?: boolean; // AI was needed but every model was busy: retry next run instead of caching
 };
 
 const UA = "DealSignalBot/0.1 (lead research; respects robots.txt)";
@@ -165,7 +166,10 @@ Only use facts stated explicitly in the text. Never guess. "services" = one shor
 
 async function aiExtract(text: string, source: string, s: Signals) {
   const out = await chat(AI_SYSTEM, text.slice(0, 3500), { json: true, maxTokens: 400 });
-  if (!out) return;
+  if (!out) {
+    s.aiMissed = aiEnabled();
+    return;
+  }
   let j: Record<string, unknown>;
   try {
     j = JSON.parse(out);

@@ -114,3 +114,10 @@ test("bot-protected site is kept, flagged, and earns no site-based points", () =
   assert.equal(r.readiness, 0);
   assert.ok(r.reasons.some((x) => x.text.startsWith("Site blocks automated checks")));
 });
+
+test("wrong state can never be Tier A, even with strong signals", () => {
+  const s = sig({ foundedYear: ev(1980), familyOwned: ev(true as const), owner: ev({ name: "A B", title: null }), employees: ev(10) });
+  const r = scoreLead(lead({ state: "OK" }), s, box, 2026);
+  assert.ok(r.fit >= 70 && r.readiness >= 50);
+  assert.notEqual(r.tier, "A");
+});
