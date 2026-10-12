@@ -57,3 +57,13 @@ test("short state headers like ST are recognised", () => {
   assert.equal(mapColumns(["Business Name", "URL", "Town", "ST"]).state, "ST");
   assert.equal(mapColumns(["Business Name", "URL", "Town", "ST"]).city, "Town");
 });
+
+test("shared hosts like Facebook pages never merge different businesses", () => {
+  const { leads, duplicates } = normalizeRows([
+    { Company: "Joe's Plumbing", Website: "https://www.facebook.com/joesplumbing", City: "Dallas" },
+    { Company: "Ann's HVAC", Website: "facebook.com/annshvac", City: "Plano" },
+  ]);
+  assert.equal(leads.length, 2);
+  assert.equal(duplicates, 0);
+  assert.equal(leads[0].domain, null);
+});

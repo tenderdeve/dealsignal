@@ -52,12 +52,16 @@ const clean = (v: unknown) => {
   return EMPTY.test(s) ? null : s;
 };
 
+// Hosts many businesses share (a Facebook page, a Yelp listing): not the company's own site,
+// so they must not be used to merge leads or be crawled as if they were.
+const SHARED_HOSTS = /(^|\.)(facebook\.com|fb\.com|instagram\.com|linkedin\.com|twitter\.com|x\.com|yelp\.com|google\.com|goo\.gl|g\.page|business\.site|bbb\.org|yellowpages\.com|nextdoor\.com|angi\.com|angieslist\.com|homeadvisor\.com|houzz\.com|thumbtack\.com|porch\.com|linktr\.ee|youtube\.com|tiktok\.com|mapquest\.com|manta\.com|bing\.com)$/;
+
 export function normalizeDomain(url: string | null): string | null {
   if (!url) return null;
   try {
     const u = new URL(/^https?:\/\//i.test(url) ? url : `http://${url}`);
-    const host = u.hostname.toLowerCase().replace(/^www\./, "");
-    return host.includes(".") ? host : null;
+    const host = u.hostname.toLowerCase().replace(/^www\./, "").replace(/\.$/, "");
+    return host.includes(".") && !SHARED_HOSTS.test(host) ? host : null;
   } catch {
     return null;
   }
