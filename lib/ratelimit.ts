@@ -7,7 +7,7 @@ export const LIMITS = {
   opener: 30, // openers written per visitor per hour
 } as const;
 
-/** Best-effort visitor id: the client IP as reported by the platform's proxy. */
+/** Visitor id: the client IP. On Vercel this header is overwritten by the platform, so it can't be spoofed. */
 export function visitor(req: Request) {
   const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return fwd || req.headers.get("x-real-ip") || "local";
@@ -19,7 +19,7 @@ export async function overLimit(req: Request, action: keyof typeof LIMITS) {
     insert into rate_limits (key, window_start, count)
     values (${`${action}:${visitor(req)}`}, date_trunc('hour', now()), 1)
     on conflict (key, window_start) do update set count = rate_limits.count + 1
-    returning count, ceil(extract(epoch from (date_trunc('hour', now()) + interval '1 hour' - now())) / 60)::int as reset_in`;
+    returning count, greatest(1, ceil(extract(epoch from (date_trunc('hour', now()) + interval '1 hour' - now())) / 60))::int as reset_in`;
   if (Math.random() < 0.05) await sql`delete from rate_limits where window_start < now() - interval '1 day'`;
   return row.count > LIMITS[action] ? (row.reset_in as number) : null;
 }
