@@ -80,7 +80,12 @@ function find<T>(text: string, source: string, re: RegExp, pick: (m: RegExpExecA
   return value == null ? null : { value, source, quote: around(text, m.index, m[0].length), via: "site" };
 }
 
-function extract(text: string, source: string) {
+// Capitalised words that are not names ("About Us Our founder…").
+const NOT_NAME = /^(our|us|we|meet|about|contact|the|your|call|today|team|company|family|home|services?|story|history|legacy|why|who|from|with|and|for)$/i;
+const person = (name: string, title: string) =>
+  name.split(" ").some((w) => NOT_NAME.test(w)) ? null : { name, title: title.toLowerCase() };
+
+export function extract(text: string, source: string) {
   return {
     foundedYear:
       find(text, source, /(?:since|established(?: in)?|est\.?|founded(?: in)?|serving [\w\s,]{0,40} since|in business since)\s*(1[89]\d{2}|20[0-2]\d)/i, (m) => year(m[1])) ??
@@ -94,8 +99,8 @@ function extract(text: string, source: string) {
     hiring: find(text, source, /we['’]?re hiring|now hiring|join our team|career opportunities|open positions/i, () => true as const),
     multiLocation: find(text, source, /(\d{1,3})\s+(?:locations|offices|branches)/i, (m) => (Number(m[1]) > 1 ? Number(m[1]) : null)),
     ownerDependent: find(text, source, /i personally|call me directly|my name is|owner (?:is )?on (?:every|each) job|i (?:will )?(?:come out|handle) (?:every|each)/i, () => true as const),
-    owner: find(text, source, /\b([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+),?\s+(?:the\s+)?(owner|founder|co-founder|president|ceo)\b/, (m) => ({ name: m[1], title: m[2].toLowerCase() })) ??
-      find(text, source, /\b(owner|founder|president)[:,]?\s+([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+)\b/, (m) => ({ name: m[2], title: m[1].toLowerCase() })),
+    owner: find(text, source, /\b([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+),?\s+(?:the\s+)?(owner|founder|co-founder|president|ceo)\b/, (m) => person(m[1], m[2])) ??
+      find(text, source, /\b(owner|founder|president)[:,]?\s+([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+)\b/, (m) => person(m[2], m[1])),
   };
 }
 
