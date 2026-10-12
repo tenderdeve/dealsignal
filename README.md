@@ -159,7 +159,7 @@ app/
   jobs/[id]/page.tsx          ranked results, filters, exports
   jobs/[id]/drawer.tsx        evidence + opener for one lead
   api/jobs/…                  create, read, re-rank, process, export
-  api/leads/[id]/opener       AI opener
+  api/jobs/[id]/leads/[leadId]/opener   AI opener (scoped to its job)
 lib/
   normalize.ts                column mapping, cleaning, dedupe
   enrich.ts                   website + domain signals

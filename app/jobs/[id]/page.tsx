@@ -47,8 +47,10 @@ export default function JobPage() {
       running.current = true;
       for (let remaining = 1; alive && remaining > 0; ) {
         const res = await fetch(`/api/jobs/${id}/process`, { method: "POST" }).catch(() => null);
-        if (!res?.ok) await new Promise((r) => setTimeout(r, 3000));
-        else remaining = (await res.json()).remaining;
+        const p = res?.ok ? await res.json().catch(() => null) : null;
+        if (p) remaining = p.remaining;
+        // Failed, or another tab holds the current batch: wait instead of hammering the server.
+        if (!p || (p.processed === 0 && p.remaining > 0)) await new Promise((r) => setTimeout(r, p ? 2000 : 3000));
         if (alive) await refresh();
       }
       running.current = false;
@@ -263,7 +265,7 @@ export default function JobPage() {
         </table>
       </div>
 
-      {open && <LeadDrawer row={open} onClose={() => setOpen(null)} onOpener={refresh} />}
+      {open && <LeadDrawer jobId={id} row={open} onClose={() => setOpen(null)} onOpener={refresh} />}
 
       {editBox && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-black/40 p-4" onClick={() => setEditBox(null)}>

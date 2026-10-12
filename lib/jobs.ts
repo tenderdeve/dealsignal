@@ -24,13 +24,16 @@ export async function createJob(fileName: string, buyBox: BuyBox, rowsIn: number
 
 /** Claims a few pending leads (or ones stuck >2 min) and enriches them. */
 export async function processBatch(jobId: string) {
-  const claimed = (await sql`
+  // One batch in flight per job: extra callers (another tab, a script firing requests
+  // in parallel) just report progress instead of multiplying the crawling.
+  const [busy] = await sql`select 1 from leads where job_id = ${jobId} and status = 'working' and updated_at > now() - interval '6 minutes' limit 1`;
+  const claimed = busy ? [] : ((await sql`
     update leads set status = 'working', updated_at = now()
     where id in (
       select id from leads
-      where job_id = ${jobId} and (status = 'pending' or (status = 'working' and updated_at < now() - interval '2 minutes'))
+      where job_id = ${jobId} and (status = 'pending' or (status = 'working' and updated_at < now() - interval '6 minutes'))
       order by id limit ${BATCH} for update skip locked)
-    returning id, domain, lead`) as { id: number; domain: string; lead: Lead }[];
+    returning id, domain, lead`) as { id: number; domain: string; lead: Lead }[]);
 
   await Promise.all(
     claimed.map(async ({ id, domain, lead }) => {

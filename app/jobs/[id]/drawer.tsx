@@ -19,7 +19,7 @@ function Fact<T>({ label, ev, show }: { label: string; ev: Evidence<T> | null; s
   );
 }
 
-export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () => void; onOpener: () => void }) {
+export function LeadDrawer({ jobId, row, onClose, onOpener }: { jobId: string; row: Row; onClose: () => void; onOpener: () => void }) {
   const { lead: l, signals: s, score: sc } = row;
   const [opener, setOpener] = useState(row.opener);
   const [writing, setWriting] = useState(false);
@@ -36,7 +36,7 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
   async function write() {
     setWriting(true);
     setErr(null);
-    const res = await fetch(`/api/leads/${row.id}/opener`, { method: "POST" }).catch(() => null);
+    const res = await fetch(`/api/jobs/${jobId}/leads/${row.id}/opener`, { method: "POST" }).catch(() => null);
     const d = await res?.json().catch(() => null);
     setWriting(false);
     if (!res?.ok || !d?.opener) return setErr(d?.error ?? "Couldn't write an opener right now. Try again.");
