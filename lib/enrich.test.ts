@@ -20,3 +20,17 @@ test("founded year from 'since' and from 'over N years'", () => {
   const y = extract("Serving Mansfield for Over 50 Years", "u").foundedYear?.value;
   assert.equal(y, new Date().getFullYear() - 50);
 });
+
+test("headcount and fleet phrases", () => {
+  assert.equal(extract("Call our 15 licensed technicians today", "u").employees?.value, 15);
+  assert.equal(extract("A team of 25 professionals", "u").employees?.value, 25);
+  assert.equal(extract("Serving 3 counties since 1990", "u").employees, null);
+  assert.equal(extract("our fleet of 12 fully-stocked trucks", "u").fleet?.value, 12);
+});
+
+test("team-page headings: people yes, services and page chrome no", async () => {
+  const { isPersonName } = await import("./enrich");
+  for (const t of ["Hugo Sanchez", "Skye Williams", "Don Bassett", "Aaron Ellis"]) assert.ok(isPersonName(t), t);
+  for (const t of ["Roof Repair", "Our Mission", "Privacy Policy", "Garland Office", "Quick Links", "Expert Technicians", "Free Estimates"])
+    assert.ok(!isPersonName(t), t);
+});

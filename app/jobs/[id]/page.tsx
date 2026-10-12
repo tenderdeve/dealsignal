@@ -134,7 +134,7 @@ export default function JobPage() {
               ["Year founded", stats.filled.yearFounded],
               ["Owner name", stats.filled.owner],
               ["Email", stats.filled.email],
-              ...(stats.filled.revenue[1] ? [["Revenue", stats.filled.revenue] as const] : []),
+              ["Company revenue", stats.filled.revenue],
             ] as const
           ).map(([label, [a, b]]) => (
             <div key={label} className="flex justify-between text-xs">
@@ -183,7 +183,11 @@ export default function JobPage() {
         })}
       </div>
 
-      <div className="mt-3 overflow-x-auto rounded-lg border border-line">
+      <p className="mt-3 text-xs text-muted">
+        Revenue: <b className="font-medium text-ink">$1.2M–2.3M</b> = from this company&apos;s headcount ·{" "}
+        <span className="italic">~$0.9M–3.0M*</span> = industry typical for a small firm (no company data found). Hover for the math.
+      </p>
+      <div className="mt-2 overflow-x-auto rounded-lg border border-line">
         <table className="w-full min-w-[860px] text-sm">
           <thead className="bg-panel text-left text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -212,7 +216,13 @@ export default function JobPage() {
                 <td className="px-3 py-2.5"><Bar value={r.score.readiness} label="Ready to sell" /></td>
                 <td className="px-3 py-2.5 tabular-nums">{r.score.yearsInBusiness ?? <span className="text-muted">—</span>}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">
-                  {r.score.revenue ? `${money(r.score.revenue.low)}–${money(r.score.revenue.high)}` : <span className="text-muted">—</span>}
+                  {r.score.revenue?.basis === "company" ? (
+                    <span title={r.score.revenue.method}>{money(r.score.revenue.low)}–{money(r.score.revenue.high)}</span>
+                  ) : r.score.revenue ? (
+                    <span className="italic text-muted" title={r.score.revenue.method}>~{money(r.score.revenue.low)}–{money(r.score.revenue.high)}*</span>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="flex flex-wrap gap-1">

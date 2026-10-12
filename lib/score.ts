@@ -15,7 +15,9 @@ export type BuyBox = {
 
 export type Reason = { text: string; tone: "good" | "bad" | "neutral"; kind: "fit" | "ready" };
 export type Tier = "A" | "B" | "C" | "dropped";
-export type Revenue = { low: number; high: number; method: string } | null;
+// basis "company": built from this company's own headcount or a stated figure.
+// basis "typical": industry average for a small firm — a rough guide, never a fact.
+export type Revenue = { low: number; high: number; method: string; basis: "company" | "typical" } | null;
 
 export type Score = {
   fit: number;
@@ -27,7 +29,12 @@ export type Score = {
   reasons: Reason[];
 };
 
-type Bench = { naics: string; label: string; revenuePerEmployee: number };
+type Bench = {
+  naics: string;
+  label: string;
+  revenuePerEmployee: number;
+  revenuePerFirm: { under20: number; emp5to9: number; emp10to19: number };
+};
 const BENCH = benchmarks as Record<string, Bench>;
 
 const INDUSTRY_KEYS: [RegExp, string][] = [
@@ -55,19 +62,42 @@ function parseMoney(s: string | null): number | null {
   return Number(m[1]) * mult;
 }
 
+/** Best available headcount, strongest evidence first. */
+function headcount(lead: Lead, s: Signals | null): { n: number; why: string } | null {
+  if (s?.employees) return { n: s.employees.value, why: `${s.employees.value} staff (stated on site)` };
+  if (lead.employees) return { n: lead.employees, why: `${lead.employees} employees (from list)` };
+  if (s?.teamListed) return { n: s.teamListed.value, why: `≥${s.teamListed.value} staff (named on team page)` };
+  // One service truck ≈ one field tech, plus office staff.
+  if (s?.fleet) return { n: Math.round(s.fleet.value * 1.5), why: `~${Math.round(s.fleet.value * 1.5)} staff (${s.fleet.value} trucks × 1.5)` };
+  return null;
+}
+
 export function estimateRevenue(lead: Lead, s: Signals | null): Revenue {
-  const employees = s?.employees?.value ?? lead.employees;
-  if (employees) {
-    const b = benchmarkFor(lead.industry);
-    const mid = employees * b.revenuePerEmployee;
+  const b = benchmarkFor(lead.industry);
+  const hc = headcount(lead, s);
+  if (hc) {
+    const mid = hc.n * b.revenuePerEmployee;
     return {
       low: mid * 0.7,
       high: mid * 1.3,
-      method: `${employees} employees × ${money(b.revenuePerEmployee)}/employee (US Census 2022, ${b.label}) ±30%`,
+      method: `${hc.why} × ${money(b.revenuePerEmployee)}/employee (US Census 2022, ${b.label}) ±30%`,
+      basis: "company",
     };
   }
   const given = parseMoney(lead.revenue);
-  return given ? { low: given * 0.8, high: given * 1.2, method: `Source list estimate ${lead.revenue} ±20%` } : null;
+  if (given) return { low: given * 0.8, high: given * 1.2, method: `Source list estimate ${lead.revenue} ±20%`, basis: "company" };
+
+  // Nothing company-specific: fall back to what a typical small firm in the
+  // industry earns (avg of firms <20 staff → avg of firms with 10–19 staff),
+  // scaled by the number of locations we know about.
+  const locations = Math.max(s?.multiLocation?.value ?? 1, lead.locations.length, 1);
+  const f = b.revenuePerFirm;
+  return {
+    low: f.under20 * locations,
+    high: f.emp10to19 * locations,
+    method: `Industry typical, not company-specific: a small ${b.label.toLowerCase()} firm (<20 staff) earns ${money(f.under20)}–${money(f.emp10to19)} (US Census 2022)${locations > 1 ? ` × ${locations} locations` : ""}`,
+    basis: "typical",
+  };
 }
 
 export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new Date().getFullYear()): Score {
@@ -100,15 +130,16 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
   if (stateOk) fit += 25;
   else add("fit", "bad", `Outside target states (${lead.state ?? "unknown"})`);
 
-  if (revenue) {
+  if (revenue?.basis === "typical") {
+    // A rough guide can't confirm or rule out the buy-box: half credit.
+    fit += 12;
+    add("fit", "neutral", `Typical size ${money(revenue.low)}–${money(revenue.high)}`);
+  } else if (revenue) {
     const inRange = (box.revenueMin == null || revenue.high >= box.revenueMin) && (box.revenueMax == null || revenue.low <= box.revenueMax);
     if (inRange) {
       fit += 25;
       add("fit", "good", `Revenue ${money(revenue.low)}–${money(revenue.high)}`);
     } else add("fit", "bad", `Revenue ${money(revenue.low)}–${money(revenue.high)} outside target`);
-  } else {
-    fit += 12;
-    add("fit", "neutral", "Size unknown");
   }
 
   if (box.minYears == null) fit += 20;
@@ -158,7 +189,7 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
   ready = Math.min(ready, 100);
 
   // --- confidence: how much of this is verified rather than unknown? ---
-  const checks = [s?.siteStatus === "ok", founded != null, !!s?.owner, revenue != null, lead.phone != null, s?.mx === true];
+  const checks = [s?.siteStatus === "ok", founded != null, !!s?.owner, revenue?.basis === "company", lead.phone != null, s?.mx === true];
   const confidence = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
   const tier: Tier = fit >= 70 && ready >= 50 ? "A" : fit >= 50 && ready >= 25 ? "B" : "C";

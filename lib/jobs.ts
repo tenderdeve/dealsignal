@@ -67,7 +67,7 @@ export async function loadJob(jobId: string) {
   const filled = {
     yearFounded: [pct(done.filter((r) => r.lead.yearFounded).length), pct(done.filter((r) => r.score.yearsInBusiness != null).length)],
     owner: [0, pct(done.filter((r) => r.signals?.owner).length)],
-    revenue: [pct(done.filter((r) => r.lead.revenue || r.lead.employees).length), pct(done.filter((r) => r.score.revenue).length)],
+    revenue: [pct(done.filter((r) => r.lead.revenue || r.lead.employees).length), pct(done.filter((r) => r.score.revenue?.basis === "company").length)],
     email: [0, pct(done.filter((r) => r.signals?.emails.length).length)],
   };
   const count = (t: string) => rows.filter((r) => r.status === "done" && r.score.tier === t).length;

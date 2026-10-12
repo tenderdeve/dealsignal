@@ -48,7 +48,15 @@ Every signal is stored with the **URL and the quote** it came from, shown in the
 
 ### Revenue — with the math shown
 
-`employees × revenue per employee for the industry (US Census, Statistics of US Businesses 2022) ± 30%`, e.g. *12 employees × $260k (Plumbing, Heating & AC Contractors) ≈ $2.2M–$4.1M*. If there is no employee count, the revenue is shown as unknown rather than guessed. The benchmarks are computed from the raw Census file — see [`data/README.md`](data/README.md).
+`headcount × revenue per employee for the industry (US Census, Statistics of US Businesses 2022) ± 30%`, e.g. *20 technicians × $260k (Plumbing, Heating & AC Contractors) ≈ $3.6M–$6.8M*.
+
+Headcount comes from the strongest evidence available, in order:
+1. A stated number on the site ("our 20 technicians", "a team of 25")
+2. The list's Employees Count column (SaaSquatch fills this from Apollo/Growjo)
+3. People named on the team page — a heading counts only if its first word is a real first name (SSA list), so "Hugo Sanchez" counts and "Roof Repair" does not
+4. Fleet size ("12 service trucks" → ~18 staff)
+
+With no company-specific evidence, the app shows what a **typical** small firm in that industry earns (Census: average of firms under 20 staff → average of firms with 10–19 staff, × locations). It is shown greyed and labelled *industry typical*, earns only half the buy-box points, and is never exported to HubSpot as the company's revenue. See [`data/README.md`](data/README.md).
 
 ## Results on the sample list
 
@@ -59,10 +67,11 @@ Every signal is stored with the **URL and the quote** it came from, shown in the
 | Rows uploaded | 106 |
 | Unique companies after merging duplicates | 88 |
 | Dead websites dropped | 7 |
-| Tier A | 26 |
+| Tier A / B / C | 26 / 23 / 32 |
 | Year founded known | 11% → 50% |
-| Owner name known | 0% → 17% |
+| Owner name known | 0% → 18% |
 | Contact email known | 0% → 24% |
+| Revenue from the company's own headcount | 0% → 9% (the rest get a labelled industry-typical range) |
 | Time (cold, 88 sites) | ~3 min · re-runs are instant from cache |
 
 ## Architecture
@@ -153,6 +162,6 @@ scripts/                      sample-list builder, migration
 
 ## Limitations and next steps
 
-- **Revenue needs headcount.** Real SaaSquatch exports carry Apollo/Growjo employee counts, so the range fills in; the OpenStreetMap sample has none.
+- **Company-specific revenue needs headcount.** Small trade businesses rarely publish it (9% of the sample). Real SaaSquatch exports carry Apollo/Growjo employee counts, so far more rows get a company-specific range.
 - Signals are public and indirect — they rank who to call first, they don't predict a sale.
 - Next: state business-registry lookups (officers, entity age, active status) to reach owner-run businesses that data vendors miss; direct HubSpot API sync; scheduled re-checks to catch changes such as a site going stale or a "for sale" notice.

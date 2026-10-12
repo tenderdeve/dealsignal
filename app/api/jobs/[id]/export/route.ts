@@ -12,7 +12,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const out = rows.map(({ lead: l, signals: s, score: sc, opener }) => {
     const reasons = sc.reasons.map((r) => r.text).join("; ");
     const founded = s?.foundedYear?.value ?? l.yearFounded ?? "";
-    const revenue = sc.revenue ? Math.round((sc.revenue.low + sc.revenue.high) / 2) : "";
+    // HubSpot gets a revenue only when it is company-specific, never an industry average.
+    const revenue = sc.revenue?.basis === "company" ? Math.round((sc.revenue.low + sc.revenue.high) / 2) : "";
     return hubspot
       ? {
           Name: l.company,
@@ -40,6 +41,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           "Years in Business": sc.yearsInBusiness ?? "",
           "Revenue Low": sc.revenue ? Math.round(sc.revenue.low) : "",
           "Revenue High": sc.revenue ? Math.round(sc.revenue.high) : "",
+          "Revenue Basis": sc.revenue?.basis === "typical" ? "industry typical" : sc.revenue ? "company" : "",
           "Revenue Method": sc.revenue?.method ?? "",
           Fit: sc.fit,
           Readiness: sc.readiness,

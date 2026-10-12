@@ -119,7 +119,13 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
 
         <section className="mt-6">
           <h3 className="text-sm font-semibold">Revenue estimate</h3>
-          <p className="mt-1 text-sm">{sc.revenue ? sc.revenue.method : "Unknown — no employee count on the site or in the list, so we don't guess."}</p>
+          {sc.revenue && (
+            <p className="mt-1 text-sm">
+              <b>{sc.revenue.basis === "typical" ? "~" : ""}${(sc.revenue.low / 1e6).toFixed(1)}M–${(sc.revenue.high / 1e6).toFixed(1)}M</b>
+              {sc.revenue.basis === "typical" && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">rough guide</span>}
+            </p>
+          )}
+          <p className="mt-1 text-sm text-muted">{sc.revenue?.method}</p>
         </section>
 
         <section className="mt-6">
@@ -131,6 +137,8 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
             <Fact label="Ownership" ev={s?.familyOwned ?? null} show={() => "Family / owner-operated"} />
             <Fact label="Owner-dependent" ev={s?.ownerDependent ?? null} show={() => "Owner works the jobs personally"} />
             <Fact label="Employees" ev={s?.employees ?? null} show={(v) => String(v)} />
+            <Fact label="Team page" ev={s?.teamListed ?? null} show={(v) => `${v} people named`} />
+            <Fact label="Fleet" ev={s?.fleet ?? null} show={(v) => `${v} trucks/vans`} />
             <Fact label="Hiring" ev={s?.hiring ?? null} show={() => "Currently hiring"} />
             <Fact label="Website last updated" ev={s?.copyrightYear ?? null} show={(v) => `© ${v}`} />
           </ul>

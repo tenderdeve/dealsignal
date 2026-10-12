@@ -2,6 +2,7 @@
 // and from domain records. Every signal keeps the URL + quote it came from.
 import * as cheerio from "cheerio";
 import { resolveMx } from "node:dns/promises";
+import firstNames from "../data/first-names.json";
 import { chat } from "./groq";
 
 export type Evidence<T> = { value: T; source: string; quote: string; via: "site" | "ai" };
@@ -15,7 +16,9 @@ export type Signals = {
   copyrightYear: Evidence<number> | null;
   familyOwned: Evidence<true> | null;
   owner: Evidence<{ name: string; title: string | null }> | null;
-  employees: Evidence<number> | null;
+  employees: Evidence<number> | null; // stated outright ("team of 25", "our 15 technicians")
+  teamListed: Evidence<number> | null; // people named on a team page (a lower bound)
+  fleet: Evidence<number> | null; // service trucks/vans mentioned
   hiring: Evidence<true> | null;
   multiLocation: Evidence<number> | null;
   ownerDependent: Evidence<true> | null;
@@ -81,7 +84,8 @@ function find<T>(text: string, source: string, re: RegExp, pick: (m: RegExpExecA
 }
 
 // Capitalised words that are not names ("About Us Our founder…").
-const NOT_NAME = /^(our|us|we|meet|about|contact|the|your|call|today|team|company|family|home|services?|story|history|legacy|why|who|from|with|and|for)$/i;
+const NOT_NAME = /^(our|us|we|meet|about|contact|the|your|call|today|team|company|family|home|services?|story|history|legacy|why|who|from|with|and|for|office|offices|location|locations|area|areas|links?|info)$/i;
+const FIRST_NAMES = new Set(firstNames as string[]);
 const person = (name: string, title: string) =>
   name.split(" ").some((w) => NOT_NAME.test(w)) ? null : { name, title: title.toLowerCase() };
 
@@ -95,13 +99,30 @@ export function extract(text: string, source: string) {
       }),
     copyrightYear: find(text, source, /(?:©|\(c\)|copyright)\s*(?:\d{4}\s*[-–]\s*)?(\d{4})/i, (m) => year(m[1])),
     familyOwned: find(text, source, /family[- ](?:owned|operated|run|business)|locally owned|owner[- ]operated|second[- ]generation|third[- ]generation/i, () => true as const),
-    employees: find(text, source, /(?:team of|staff of|over|more than)\s+(\d{1,4})\+?\s+(?:employees|technicians|techs|team members|professionals|staff|people)/i, (m) => Number(m[1]) || null),
+    employees:
+      find(text, source, /(?:team of|staff of|over|more than)\s+(\d{1,4})\+?\s+(?:employees|technicians|techs|team members|professionals|staff|people)/i, (m) => Number(m[1]) || null) ??
+      find(text, source, /\b(?:our|with|employs?|of)\s+(\d{1,3})\+?\s+(?:licensed |certified |experienced |full[- ]time |trained |skilled )?(?:technicians|techs|plumbers|electricians|roofers|installers|employees|team members|crew members|professionals)\b/i, (m) => (Number(m[1]) >= 2 ? Number(m[1]) : null)),
+    fleet: find(text, source, /(?:fleet of|over|more than|our)\s+(\d{1,3})\+?\s+(?:fully[- ]stocked |service |work )?(?:trucks|vans|vehicles)\b/i, (m) => (Number(m[1]) >= 2 ? Number(m[1]) : null)),
     hiring: find(text, source, /we['’]?re hiring|now hiring|join our team|career opportunities|open positions/i, () => true as const),
     multiLocation: find(text, source, /(\d{1,3})\s+(?:locations|offices|branches)/i, (m) => (Number(m[1]) > 1 ? Number(m[1]) : null)),
     ownerDependent: find(text, source, /i personally|call me directly|my name is|owner (?:is )?on (?:every|each) job|i (?:will )?(?:come out|handle) (?:every|each)/i, () => true as const),
     owner: find(text, source, /\b([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+),?\s+(?:the\s+)?(owner|founder|co-founder|president|ceo)\b/, (m) => person(m[1], m[2])) ??
       find(text, source, /\b(owner|founder|president)[:,]?\s+([A-Z][a-z]+(?: [A-Z]\.)? [A-Z][a-z]+)\b/, (m) => person(m[2], m[1])),
   };
+}
+
+/** A heading is a person if it reads "First Last" and First is a real first name (SSA list). */
+export const isPersonName = (t: string) =>
+  /^[A-Z][a-z]+(?: [A-Z]\.?)? [A-Z][a-z'’-]+$/.test(t) && FIRST_NAMES.has(t.split(" ")[0]) && !t.split(" ").some((w) => NOT_NAME.test(w));
+
+/** People named in headings on a team page ("Jane Smith"), not "Roof Repair". */
+function countPeople($: cheerio.CheerioAPI) {
+  const names = new Set<string>();
+  $("h2,h3,h4,h5,h6,strong,figcaption").each((_, el) => {
+    const t = $(el).text().replace(/\s+/g, " ").trim();
+    if (isPersonName(t)) names.add(t);
+  });
+  return names.size;
 }
 
 // --- domain records ----------------------------------------------------------
@@ -176,6 +197,8 @@ export async function enrich(domain: string, website: string | null): Promise<Si
     familyOwned: null,
     owner: null,
     employees: null,
+    teamListed: null,
+    fleet: null,
     hiring: null,
     multiLocation: null,
     ownerDependent: null,
@@ -232,6 +255,10 @@ export async function enrich(domain: string, website: string | null): Promise<Si
         const e = $p(a).attr("href")!.slice(7).split("?")[0].toLowerCase();
         if (e.includes("@") && !s.emails.includes(e)) s.emails.push(e);
       });
+      if (/team|staff|about|who-we-are|people/i.test(new URL(p.url).pathname) && !s.teamListed) {
+        const people = countPeople($p);
+        if (people >= 3) s.teamListed = { value: people, source: p.url, quote: `${people} people listed on the team page`, via: "site" };
+      }
       $p("script,style,noscript,svg").remove();
       const text = $p("body").text().replace(/\s+/g, " ");
       s.pages.push(p.url);

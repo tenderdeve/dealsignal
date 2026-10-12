@@ -16,3 +16,10 @@ sample in their format, not an actual SaaSquatch export.
 Revenue per employee by industry, computed as receipts ÷ employees from the
 US Census Bureau, Statistics of US Businesses 2022
 (`us_state_6digitnaics_2022.txt`, United States, all firm sizes).
+
+## first-names.json
+The 3,000 most common US first names (by share of births, 1940–2008), from
+Social Security Administration baby-name data as packaged in
+[hadley/data-baby-names](https://github.com/hadley/data-baby-names). Used to
+tell a staff name ("Hugo Sanchez") from a heading ("Roof Repair") when
+counting people on team pages.

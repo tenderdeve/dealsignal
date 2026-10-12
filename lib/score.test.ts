@@ -32,6 +32,8 @@ const sig = (over: Partial<Signals> = {}): Signals => ({
   familyOwned: null,
   owner: null,
   employees: null,
+  teamListed: null,
+  fleet: null,
   hiring: null,
   multiLocation: null,
   ownerDependent: null,
@@ -62,7 +64,7 @@ test("dead website is dropped, not silently removed", () => {
 
 test("outside the buy-box loses fit points with a reason", () => {
   const r = scoreLead(lead({ state: "OK", industry: "Painting" }), sig(), box, 2026);
-  assert.equal(r.fit, 20); // only "size unknown" 12 + "tenure unknown" 8
+  assert.equal(r.fit, 20); // only "typical size" 12 + "tenure unknown" 8
   assert.ok(r.reasons.some((x) => x.text.startsWith("Outside target states")));
   assert.ok(r.reasons.some((x) => x.text.startsWith("Outside target industries")));
 });
@@ -75,12 +77,35 @@ test("multi-location and hiring do not earn readiness", () => {
 test("revenue comes from employees × Census benchmark, with the math shown", () => {
   const r = estimateRevenue(lead({ industry: "HVAC" }), sig({ employees: ev(10) }))!;
   assert.equal(Math.round((r.low + r.high) / 2), 10 * 260272);
-  assert.match(r.method, /10 employees × \$260k\/employee/);
+  assert.match(r.method, /^10 staff \(stated on site\) × \$260k\/employee/);
 });
 
-test("no employees and no source estimate means unknown, not a guess", () => {
-  assert.equal(estimateRevenue(lead(), sig()), null);
+test("no headcount falls back to a clearly-labelled industry typical range", () => {
+  const r = estimateRevenue(lead({ industry: "HVAC" }), sig())!;
+  assert.equal(r.basis, "typical");
+  assert.equal(r.low, 921302);
+  assert.equal(r.high, 2960335);
+  assert.match(r.method, /^Industry typical, not company-specific/);
   assert.equal(estimateRevenue(lead({ revenue: "$2.5M" }), sig())!.low, 2e6);
+});
+
+test("typical range scales with locations", () => {
+  const r = estimateRevenue(lead({ industry: "HVAC", locations: ["Allen", "Frisco"] }), sig())!;
+  assert.equal(r.low, 921302 * 2);
+});
+
+test("headcount evidence: stated beats team page beats trucks", () => {
+  assert.match(estimateRevenue(lead(), sig({ employees: ev(8), teamListed: ev(5) }))!.method, /^8 staff \(stated/);
+  assert.match(estimateRevenue(lead(), sig({ teamListed: ev(5), fleet: ev(10) }))!.method, /^≥5 staff/);
+  const r = estimateRevenue(lead(), sig({ fleet: ev(10) }))!;
+  assert.equal(r.basis, "company");
+  assert.match(r.method, /^~15 staff \(10 trucks/);
+});
+
+test("typical size never fails the buy-box, only half credit", () => {
+  const r = scoreLead(lead(), sig({ foundedYear: ev(1990) }), { ...box, revenueMin: 5e7, revenueMax: null }, 2026);
+  assert.equal(r.fit, 30 + 25 + 12 + 20);
+  assert.ok(r.reasons.some((x) => x.text.startsWith("Typical size")));
 });
 
 test("bot-protected site is kept, flagged, and earns no site-based points", () => {
