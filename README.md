@@ -134,7 +134,7 @@ npm install
 cp .env.example .env.local   # fill in GROQ_API_KEY, DATABASE_URL, DATABASE_URL_UNPOOLED
 npm run db:migrate           # creates the three tables
 npm run dev                  # http://localhost:3000
-npm test                     # normalisation, extraction and scoring tests
+npm test                     # normalisation, extraction, scoring, opener and address-filter tests
 ```
 
 Click **"Use the sample"** on the home page to try it without a file.
@@ -153,6 +153,9 @@ npx vercel --prod
 ```
 app/
   page.tsx                    upload + buy-box
+  sheet.tsx                   home-page "marked-up list" built from a real run
+  ui.tsx                      shared bits: tier badge, score bar, chips, buy-box form
+  theme-toggle.tsx            light/dark switch (follows the device by default)
   jobs/[id]/page.tsx          ranked results, filters, exports
   jobs/[id]/drawer.tsx        evidence + opener for one lead
   api/jobs/…                  create, read, re-rank, process, export
