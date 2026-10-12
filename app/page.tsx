@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { mapColumns, type Field } from "@/lib/normalize";
 import type { BuyBox } from "@/lib/score";
+import { Sheet } from "./sheet";
 import { BuyBoxForm } from "./ui";
 
 type Upload = { name: string; rows: Record<string, string>[] };
@@ -75,17 +76,20 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Find the owners ready to sell.</h1>
-      <p className="mt-3 text-lg text-muted">
-        Drop in a SaaSquatch export. DealSignal checks every company&apos;s website, fills the gaps, and ranks the list by
-        how well each business fits your buy-box and how likely its owner is to sell — with the reasons shown.
+    <main className="mx-auto grid max-w-7xl gap-12 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-16">
+      <div className="min-w-0">
+      <h1 className="max-w-xl text-balance font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+        Find the owners ready to sell.
+      </h1>
+      <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
+        Bring the list SaaSquatch gave you. DealSignal reads every company&apos;s own website, crosses out the duplicates and
+        closed businesses, and highlights the owners worth calling first, with the evidence for each one.
       </p>
 
-      <ol className="mt-10 space-y-6">
-        <li className="rounded-xl border border-line p-5 sm:p-6">
-          <h2 className="font-semibold">
-            <span className="mr-2 text-brand">1</span>Upload your lead list
+      <ol className="mt-10 space-y-5">
+        <li className="rounded-lg border border-line bg-card p-5 sm:p-6">
+          <h2 className="font-display text-lg font-semibold">
+            <span className="mr-2 text-brand">1</span>Add your lead list
           </h2>
           {!upload ? (
             <>
@@ -93,14 +97,14 @@ export default function Home() {
                 onDragOver={(e) => (e.preventDefault(), setDrag(true))}
                 onDragLeave={() => setDrag(false)}
                 onDrop={(e) => (e.preventDefault(), setDrag(false), onFile(e.dataTransfer.files[0]))}
-                className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition ${drag ? "border-brand bg-brand-soft" : "border-line hover:border-slate-400"}`}
+                className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition ${drag ? "border-brand bg-brand-soft" : "border-line hover:border-muted"}`}
               >
-                <span className="font-medium">Drag a CSV here, or click to choose</span>
-                <span className="mt-1 text-sm text-muted">SaaSquatch exports work as-is. Any CSV with a company column works too.</span>
+                <span className="font-medium">Drop a CSV here, or click to choose one</span>
+                <span className="mt-1 text-sm text-muted">SaaSquatch exports work as they are. Any CSV with a company column works too.</span>
                 <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
               </label>
               <button onClick={useSample} className="mt-3 text-sm font-medium text-brand hover:underline">
-                No file handy? Use the sample: 106 Dallas–Fort Worth home-service businesses →
+                No file to hand? Use the sample of 106 Dallas–Fort Worth contractors
               </button>
             </>
           ) : (
@@ -115,7 +119,7 @@ export default function Home() {
                 {Object.entries(FIELD_LABEL).map(([f, label]) => {
                   const hit = columns[f as Field];
                   return (
-                    <span key={f} className={`rounded border px-2 py-0.5 text-xs ${hit ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-line text-muted line-through"}`} title={hit ? `from column "${hit}"` : "not in file"}>
+                    <span key={f} className={`rounded border px-2 py-0.5 text-xs ${hit ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200" : "border-line text-muted line-through"}`} title={hit ? `from column "${hit}"` : "not in file"}>
                       {label}
                     </span>
                   );
@@ -123,14 +127,14 @@ export default function Home() {
               </div>
             </div>
           )}
-          {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+          {error && <p className="mt-3 text-sm text-drop">{error}</p>}
         </li>
 
-        <li className={`rounded-xl border border-line p-5 sm:p-6 ${upload ? "" : "pointer-events-none opacity-50"}`}>
-          <h2 className="font-semibold">
-            <span className="mr-2 text-brand">2</span>Describe what you want to buy
+        <li className={`rounded-lg border border-line bg-card p-5 sm:p-6 ${upload ? "" : "pointer-events-none opacity-50"}`}>
+          <h2 className="font-display text-lg font-semibold">
+            <span className="mr-2 text-brand">2</span>Describe the business you want to buy
           </h2>
-          <p className="mb-5 mt-1 text-sm text-muted">Your buy-box. You can change it later — results re-rank instantly.</p>
+          <p className="mb-5 mt-1 text-sm text-muted">This is your buy-box. You can change it later and the list re-ranks instantly.</p>
           <BuyBoxForm value={box} onChange={setBox} industries={industries} emptyHint={upload ? undefined : "Upload a list to choose industries."} />
         </li>
       </ol>
@@ -138,13 +142,20 @@ export default function Home() {
       <button
         onClick={start}
         disabled={!upload || busy}
-        className="mt-6 w-full rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-6 w-full rounded-lg bg-ink px-5 py-3.5 font-display text-lg font-semibold text-paper transition hover:bg-brand disabled:opacity-40"
       >
         {busy ? "Cleaning list…" : "Find my best leads"}
       </button>
-      <p className="mt-3 text-center text-xs text-muted">
-        Reads only public company websites, respects robots.txt, and never scrapes LinkedIn or bypasses bot protection.
+      <p className="mt-3 text-sm text-muted">
+        Reads only public company websites, respects robots.txt, and never scrapes LinkedIn or gets around bot protection.
       </p>
+
+      <div className="mt-14 lg:hidden"><Sheet /></div>
+      </div>
+
+      <aside className="hidden lg:block">
+        <Sheet />
+      </aside>
     </main>
   );
 }

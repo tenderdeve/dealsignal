@@ -52,9 +52,9 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
   ].filter(Boolean);
 
   return (
-    <div className="fixed inset-0 z-20 bg-black/20" onClick={onClose}>
+    <div className="fixed inset-0 z-20 bg-black/30" onClick={onClose}>
       <aside
-        className="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto bg-white p-6 shadow-2xl"
+        className="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto border-l border-line bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={l.company}
@@ -98,11 +98,11 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
               </div>
             </div>
           ) : (
-            <button onClick={write} disabled={writing} className="mt-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <button onClick={write} disabled={writing} className="mt-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-paper disabled:opacity-60">
               {writing ? "Writing…" : "Write opener from verified facts"}
             </button>
           )}
-          {err && <p className="mt-2 text-xs text-rose-600">{err}</p>}
+          {err && <p className="mt-2 text-xs text-drop">{err}</p>}
         </section>
 
         <section className="mt-6">
@@ -122,7 +122,7 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
           {sc.revenue && (
             <p className="mt-1 text-sm">
               <b>{sc.revenue.basis === "typical" ? "~" : ""}${(sc.revenue.low / 1e6).toFixed(1)}M–${(sc.revenue.high / 1e6).toFixed(1)}M</b>
-              {sc.revenue.basis === "typical" && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">rough guide</span>}
+              {sc.revenue.basis === "typical" && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">rough guide</span>}
             </p>
           )}
           <p className="mt-1 text-sm text-muted">{sc.revenue?.method}</p>

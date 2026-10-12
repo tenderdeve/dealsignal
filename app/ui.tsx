@@ -13,21 +13,21 @@ export function TierBadge({ tier }: { tier: Tier }) {
 }
 
 export function Bar({ value, label }: { value: number; label: string }) {
-  const color = value >= 70 ? "bg-emerald-500" : value >= 40 ? "bg-amber-400" : "bg-slate-300";
+  const color = value >= 70 ? "bg-emerald-500" : value >= 40 ? "bg-amber-400" : "bg-strike";
   return (
     <div className="flex items-center gap-2" title={`${label}: ${value}/100`}>
-      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-panel">
         <div className={`h-full ${color}`} style={{ width: `${value}%` }} />
       </div>
-      <span className="w-6 text-right font-mono text-xs tabular-nums text-muted">{value}</span>
+      <span className="w-6 text-right text-xs tabular-nums text-muted">{value}</span>
     </div>
   );
 }
 
 const TONE = {
-  good: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  bad: "border-rose-200 bg-rose-50 text-rose-800",
-  neutral: "border-slate-200 bg-slate-50 text-slate-700",
+  good: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200",
+  bad: "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200",
+  neutral: "border-line bg-panel text-ink/80",
 };
 
 export function Chip({ r }: { r: Pick<Reason, "text" | "tone"> }) {
@@ -51,7 +51,7 @@ export function BuyBoxForm({
 }) {
   const toggle = (i: string) =>
     onChange({ ...value, industries: value.industries.includes(i) ? value.industries.filter((x) => x !== i) : [...value.industries, i] });
-  const select = "w-full rounded-md border border-line bg-white px-2 py-1.5 text-sm";
+  const select = "w-full rounded-md border border-line bg-card px-2 py-1.5 text-sm";
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -65,7 +65,7 @@ export function BuyBoxForm({
                 type="button"
                 onClick={() => toggle(i)}
                 aria-pressed={on}
-                className={`rounded-full border px-3 py-1 text-sm transition ${on ? "border-brand bg-brand text-white" : "border-line bg-white hover:border-slate-400"}`}
+                className={`rounded-full border px-3 py-1 text-sm transition ${on ? "border-brand bg-brand text-paper" : "border-line bg-card hover:border-muted"}`}
               >
                 {i}
               </button>

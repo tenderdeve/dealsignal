@@ -87,7 +87,7 @@ export default function JobPage() {
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{job.file_name}</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">{job.file_name}</h1>
           <p className="mt-1 text-sm text-muted">
             {box.industries.length ? box.industries.join(", ") : "Any industry"} · {box.states.length ? box.states.join(", ") : "any state"} ·{" "}
             {box.revenueMin || box.revenueMax ? `${box.revenueMin ? money(box.revenueMin) : "any"}–${box.revenueMax ? money(box.revenueMax) : "any"} revenue` : "any size"}
@@ -97,7 +97,7 @@ export default function JobPage() {
         </div>
         <div className="flex gap-2">
           <a href={`/api/jobs/${id}/export?format=csv`} className="rounded-md border border-line px-3 py-2 text-sm font-medium hover:bg-panel">Export CSV</a>
-          <a href={`/api/jobs/${id}/export?format=hubspot`} className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">Export for HubSpot</a>
+          <a href={`/api/jobs/${id}/export?format=hubspot`} className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-paper hover:bg-brand">Export for HubSpot</a>
         </div>
       </div>
 
@@ -105,9 +105,9 @@ export default function JobPage() {
         <div className="mt-6 rounded-lg border border-line p-4" role="status">
           <div className="flex justify-between text-sm">
             <span className="font-medium">Checking company websites…</span>
-            <span className="font-mono tabular-nums text-muted">{stats.done}/{stats.leads}</span>
+            <span className="tabular-nums text-muted">{stats.done}/{stats.leads}</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-panel">
             <div className="h-full bg-brand transition-all" style={{ width: `${progress}%` }} />
           </div>
           <p className="mt-2 text-xs text-muted">Results appear below as they come in. You can leave and come back — progress is saved.</p>
@@ -122,7 +122,7 @@ export default function JobPage() {
           { n: stats.tiers.dropped, l: "dead websites dropped" },
           { n: stats.tiers.A, l: "Tier A — call first", accent: true },
         ].map((s) => (
-          <div key={s.l} className={`rounded-lg border p-4 ${s.accent ? "border-emerald-200 bg-emerald-50" : "border-line"}`}>
+          <div key={s.l} className={`rounded-lg border p-4 ${s.accent ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/50" : "border-line"}`}>
             <div className="text-2xl font-semibold tabular-nums">{s.n}</div>
             <div className="text-xs text-muted">{s.l}</div>
           </div>
@@ -139,8 +139,8 @@ export default function JobPage() {
           ).map(([label, [a, b]]) => (
             <div key={label} className="flex justify-between text-xs">
               <span>{label}</span>
-              <span className="font-mono tabular-nums">
-                <span className="text-muted">{a}%</span> → <b className={b > a ? "text-emerald-700" : ""}>{b}%</b>
+              <span className="tabular-nums">
+                <span className="text-muted">{a}%</span> → <b className={b > a ? "text-emerald-700 dark:text-emerald-300" : ""}>{b}%</b>
               </span>
             </div>
           ))}
@@ -155,7 +155,7 @@ export default function JobPage() {
             title={TIER_STYLE[t].hint}
             className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === t ? "border-brand text-ink" : "border-transparent text-muted hover:text-ink"}`}
           >
-            {TIER_STYLE[t].label} <span className="ml-1 rounded bg-slate-100 px-1.5 text-xs tabular-nums">{stats.tiers[t]}</span>
+            {TIER_STYLE[t].label} <span className="ml-1 rounded bg-panel px-1.5 text-xs tabular-nums">{stats.tiers[t]}</span>
           </button>
         ))}
       </div>
@@ -250,13 +250,13 @@ export default function JobPage() {
       {open && <LeadDrawer row={open} onClose={() => setOpen(null)} onOpener={refresh} />}
 
       {editBox && (
-        <div className="fixed inset-0 z-30 grid place-items-center bg-black/30 p-4" onClick={() => setEditBox(null)}>
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Edit buy-box">
+        <div className="fixed inset-0 z-30 grid place-items-center bg-black/40 p-4" onClick={() => setEditBox(null)}>
+          <div className="w-full max-w-xl rounded-xl border border-line bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Edit buy-box">
             <h2 className="mb-4 font-semibold">Edit buy-box</h2>
             <BuyBoxForm value={editBox} onChange={setEditBox} industries={industries} />
             <div className="mt-6 flex justify-end gap-2">
               <button onClick={() => setEditBox(null)} className="rounded-md px-3 py-2 text-sm text-muted hover:text-ink">Cancel</button>
-              <button onClick={saveBox} className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white">Re-rank</button>
+              <button onClick={saveBox} className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-paper">Re-rank</button>
             </div>
           </div>
         </div>

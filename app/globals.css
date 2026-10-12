@@ -1,17 +1,127 @@
 @import "tailwindcss";
 
+/* Theme is set by a data-theme attribute on <html> (see layout.tsx):
+   the visitor's saved choice, else their device setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --paper: #fbfcfa;
+  --card: #ffffff;
+  --ink: #18211e;
+  --muted: #5e6a65;
+  --line: #dce1dd;
+  --panel: #f3f5f2;
+  --brand: #1f6f4a;
+  --brand-soft: #e3f0e8;
+  --mark: #f3e46b;
+  --strike: #9aa39f;
+  --drop: #a8432f;
+  --sheet-shadow: 0 1px 0 #dce1dd, 0 12px 32px -18px rgba(24, 33, 30, 0.35);
+  color-scheme: light;
+}
+
+/* Night ledger: deep green-charcoal paper, the highlighter glows. */
+[data-theme="dark"] {
+  --paper: #101714;
+  --card: #16201c;
+  --ink: #e4ebe7;
+  --muted: #93a29b;
+  --line: #2a3631;
+  --panel: #1c2722;
+  --brand: #5dbe8f;
+  --brand-soft: #183527;
+  --mark: #e8d54f;
+  --strike: #66746e;
+  --drop: #e58a70;
+  --sheet-shadow: 0 0 0 1px #2a3631, 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
-  --color-panel: #f8fafc;
-  --color-brand: #0f766e;
-  --color-brand-soft: #e6f4f1;
+  --font-sans: var(--font-public);
+  --font-display: var(--font-bricolage);
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-panel: var(--panel);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-mark: var(--mark);
+  --color-strike: var(--strike);
+  --color-drop: var(--drop);
 }
 
 body {
-  background: #ffffff;
-  color: var(--color-ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Tailwind v4 dropped the pointer cursor on buttons; restore it for everything clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  select:not(:disabled),
+  summary,
+  label:has(> input[type="file"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* The hero sheet: one load sequence — strikes draw, then the highlighter sweeps. */
+.strike {
+  position: relative;
+  color: var(--color-strike);
+}
+.strike::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 55%;
+  height: 2px;
+  background: var(--color-ink);
+  opacity: 0.55;
+  transform-origin: left;
+  animation: draw 420ms ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.mark {
+  background-image: linear-gradient(transparent 18%, var(--color-mark) 18%, var(--color-mark) 88%, transparent 88%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: sweep 520ms ease-out both;
+  animation-delay: var(--d, 0ms);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 0.15em;
+  margin: 0 -0.15em;
+}
+/* Highlighted text stays dark on the yellow stroke in both themes. */
+[data-theme="dark"] .mark {
+  color: #18211e;
+}
+@keyframes draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes sweep {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .strike::after,
+  .mark {
+    animation: none;
+  }
 }
