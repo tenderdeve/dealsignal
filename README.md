@@ -67,7 +67,7 @@ With no company-specific evidence, the app shows what a **typical** small firm i
 | Rows uploaded | 106 |
 | Unique companies after merging duplicates | 88 |
 | Dead websites dropped | 6 |
-| Tier A / B / C | 26 / 23 / 33 |
+| Tier A / B / C | 25 / 24 / 33 |
 | Year founded known | 11% → 51% |
 | Owner name known | 0% → 17% |
 | Contact email known | 0% → 24% |
@@ -115,6 +115,14 @@ flowchart LR
 - Identifies itself honestly (`DealSignalBot/0.1`) and respects `robots.txt`.
 - Reads only a company's own public website and public domain records (RDAP registration date, DNS MX).
 - Does **not** scrape LinkedIn, solve CAPTCHAs, rotate IPs or spoof a browser to get past bot protection.
+- If `robots.txt` disallows the homepage, nothing from the site is used and the lead is flagged "verify manually".
+
+### Security
+
+- **No SSRF.** Uploaded lists are untrusted, so every fetch (and every redirect hop, followed manually) is refused unless the host is a public domain name resolving only to public IPs — no IP literals, `localhost`, private ranges or cloud metadata addresses.
+- **Safe exports.** CSV cells that start with `=`, `+`, `-` or `@` are escaped, so scraped text can't run as a spreadsheet formula.
+- **One bad site can't stall a list.** A crash while checking one company is logged and that lead is scored on its CSV data alone.
+- Inputs are validated at the API boundary (row cap, buy-box sanitising, id formats). Results are reachable only through their unguessable job link; there are no user accounts in this prototype.
 - Openers never speculate about an owner's age, health or retirement.
 
 ## Run it locally

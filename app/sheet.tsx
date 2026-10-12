@@ -44,7 +44,7 @@ export function Sheet() {
         <div className="border-t border-line px-5 py-2 text-sm text-muted">…and 97 more</div>
       </div>
       <figcaption className="mt-4 max-w-md text-sm text-muted">
-        From a real run on the sample: 106 rows became 88 companies, 6 closed businesses were dropped, and 26 were highlighted to call first.
+        From a real run on the sample: 106 rows became 88 companies, 6 closed businesses were dropped, and 25 were highlighted to call first.
       </figcaption>
     </figure>
   );
