@@ -35,7 +35,15 @@ export async function processBatch(jobId: string) {
   await Promise.all(
     claimed.map(async ({ id, domain, lead }) => {
       const [hit] = await sql`select signals from domain_cache where domain = ${domain} and fetched_at > now() - interval '7 days'`;
-      const signals: Signals = hit?.signals ?? (await enrich(domain, lead.website));
+      let signals: Signals;
+      try {
+        signals = hit?.signals ?? (await enrich(domain, lead.website));
+      } catch (e) {
+        // One broken site must never stall the whole list: score it with what the CSV had.
+        console.error(`enrich failed for ${domain}:`, e);
+        await sql`update leads set status = 'done', updated_at = now() where id = ${id}`;
+        return;
+      }
       // Don't cache a result the AI couldn't finish, so the next run fills the gap.
       if (!hit && !signals.aiMissed)
         await sql`

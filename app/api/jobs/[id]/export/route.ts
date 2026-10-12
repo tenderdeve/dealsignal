@@ -53,7 +53,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   });
 
   const name = `dealsignal-${hubspot ? "hubspot" : "leads"}.csv`;
-  return new Response(Papa.unparse(out), {
+  // escapeFormulae: a cell like "=HYPERLINK(...)" from a scraped page must not run in Excel.
+  return new Response(Papa.unparse(out, { escapeFormulae: true }), {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${name}"` },
   });
 }

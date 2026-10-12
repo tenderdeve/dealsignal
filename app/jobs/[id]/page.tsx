@@ -28,8 +28,9 @@ export default function JobPage() {
   const running = useRef(false);
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/jobs/${id}`);
-    if (!res.ok) return setMissing(true);
+    const res = await fetch(`/api/jobs/${id}`).catch(() => null);
+    if (res?.status === 404) return setMissing(true);
+    if (!res?.ok) return null;
     const d: Data = await res.json();
     setData(d);
     setOpen((o) => (o ? (d.rows.find((r) => r.id === o.id) ?? null) : null));

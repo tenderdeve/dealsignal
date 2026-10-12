@@ -170,12 +170,14 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
     ready += 10;
     add("ready", "good", "Runs on the owner personally");
   }
+  // "Single location" / "Not hiring" are only claims if we actually read the site.
+  const read = s?.siteStatus === "ok" && s.pages.length > 0;
   const locations = Math.max(s?.multiLocation?.value ?? 1, lead.locations.length);
-  if (s?.siteStatus === "ok" && locations <= 1) {
+  if (read && locations <= 1) {
     ready += 10;
     add("ready", "good", "Single location");
   } else if (locations > 1) add("ready", "neutral", `${locations} locations`);
-  if (s?.siteStatus === "ok" && !s.hiring) {
+  if (read && !s.hiring) {
     ready += 10;
     add("ready", "good", "Not hiring");
   } else if (s?.hiring) add("ready", "neutral", "Hiring — still growing");

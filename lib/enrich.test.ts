@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extract } from "./enrich";
+import { extract, isPrivateAddress } from "./enrich";
 
 const owner = (t: string) => extract(t, "https://x.test").owner?.value.name ?? null;
 
@@ -33,4 +33,10 @@ test("team-page headings: people yes, services and page chrome no", async () => 
   for (const t of ["Hugo Sanchez", "Skye Williams", "Don Bassett", "Aaron Ellis"]) assert.ok(isPersonName(t), t);
   for (const t of ["Roof Repair", "Our Mission", "Privacy Policy", "Garland Office", "Quick Links", "Expert Technicians", "Free Estimates"])
     assert.ok(!isPersonName(t), t);
+});
+
+test("private and internal addresses are refused", () => {
+  for (const ip of ["127.0.0.1", "10.1.2.3", "172.16.0.9", "192.168.1.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "fe80::1", "::ffff:127.0.0.1"])
+    assert.ok(isPrivateAddress(ip), ip);
+  for (const ip of ["8.8.8.8", "34.174.231.0", "172.32.0.1", "2606:4700::1"]) assert.ok(!isPrivateAddress(ip), ip);
 });

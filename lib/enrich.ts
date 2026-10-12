@@ -1,7 +1,8 @@
 // Collects public, verifiable signals about one business from its own website
 // and from domain records. Every signal keeps the URL + quote it came from.
 import * as cheerio from "cheerio";
-import { resolveMx } from "node:dns/promises";
+import { lookup, resolveMx } from "node:dns/promises";
+import { isIP } from "node:net";
 import firstNames from "../data/first-names.json";
 import { aiEnabled, chat } from "./groq";
 
@@ -34,15 +35,37 @@ const SUBPAGE = /about|our-story|history|who-we-are|team|company|careers|jobs|jo
 const MAX_PAGES = 5;
 const NOW = new Date().getFullYear();
 
+// Uploaded lists are untrusted: never let a "website" point our server at a
+// private or internal address (directly, or through a redirect).
+const PRIVATE = /^(0\.|10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|::1$|::$|f[cd]|fe80|::ffff:)/i;
+export const isPrivateAddress = (ip: string) => PRIVATE.test(ip);
+
+async function isPublicHost(host: string) {
+  if (isIP(host) || !host.includes(".") || /(^|\.)(localhost|local|internal|lan|home)$/i.test(host)) return false;
+  try {
+    const addrs = await lookup(host, { all: true });
+    return addrs.length > 0 && addrs.every((a) => !isPrivateAddress(a.address));
+  } catch {
+    return false;
+  }
+}
+
 async function get(url: string, ms = 8000) {
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, Accept: "text/html,*/*" },
-    redirect: "follow",
-    signal: AbortSignal.timeout(ms),
-  });
-  const type = res.headers.get("content-type") ?? "";
-  const body = res.ok && /html|text\/plain/.test(type) ? (await res.text()).slice(0, 1_500_000) : "";
-  return { ok: res.ok, status: res.status, url: res.url, body };
+  const deadline = AbortSignal.timeout(ms);
+  for (let hop = 0; hop < 5; hop++) {
+    const u = new URL(url);
+    if (!/^https?:$/.test(u.protocol) || !(await isPublicHost(u.hostname))) throw new Error(`refused ${u.hostname}`);
+    const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,*/*" }, redirect: "manual", signal: deadline });
+    const next = res.status >= 300 && res.status < 400 && res.headers.get("location");
+    if (next) {
+      url = new URL(next, url).href;
+      continue;
+    }
+    const type = res.headers.get("content-type") ?? "";
+    const body = res.ok && /html|text\/plain/.test(type) ? (await res.text()).slice(0, 1_500_000) : "";
+    return { ok: res.ok, status: res.status, url, body };
+  }
+  throw new Error("too many redirects");
 }
 
 /** Disallow rules for "*" — enough to stay polite, not a full RFC 9309 parser. */
@@ -229,13 +252,16 @@ export async function enrich(domain: string, website: string | null): Promise<Si
       ),
     ].slice(0, MAX_PAGES - 1);
 
-    const pages = [{ url: home.url, html: home.body }];
-    if (!allowed(home.url, rules)) s.robotsBlocked = true;
-    else
-      for (const u of links.filter((u) => allowed(u, rules))) {
-        const p = await get(u).catch(() => null);
-        if (p?.ok && p.body) pages.push({ url: p.url, html: p.body });
-      }
+    // robots.txt says no robots on the homepage: use nothing from the site.
+    const pages = allowed(home.url, rules) ? [{ url: home.url, html: home.body }] : [];
+    if (!pages.length) {
+      s.robotsBlocked = true;
+      s.siteStatus = "blocked";
+    }
+    for (const u of pages.length ? links.filter((u) => allowed(u, rules)) : []) {
+      const p = await get(u).catch(() => null);
+      if (p?.ok && p.body) pages.push({ url: p.url, html: p.body });
+    }
 
     let aiText = "";
     for (const p of pages) {
@@ -260,7 +286,7 @@ export async function enrich(domain: string, website: string | null): Promise<Si
       if (/about|story|history|who-we-are|team/i.test(p.url) || p.url === home.url) aiText += `\n${text.slice(0, 1800)}`;
     }
 
-    if (!s.owner || !s.foundedYear) await aiExtract(aiText.trim(), s.pages[1] ?? s.pages[0], s);
+    if (aiText && (!s.owner || !s.foundedYear)) await aiExtract(aiText.trim(), s.pages[1] ?? s.pages[0], s);
   }
 
   [s.domainRegistered, s.mx] = await records;

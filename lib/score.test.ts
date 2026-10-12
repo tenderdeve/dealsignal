@@ -26,7 +26,7 @@ const sig = (over: Partial<Signals> = {}): Signals => ({
   checkedAt: "2026-10-12",
   siteStatus: "ok",
   robotsBlocked: false,
-  pages: [],
+  pages: ["https://x.test/"],
   foundedYear: null,
   copyrightYear: null,
   familyOwned: null,
@@ -119,4 +119,9 @@ test("wrong state can never be Tier A, even with strong signals", () => {
   const r = scoreLead(lead({ state: "OK" }), s, box, 2026);
   assert.ok(r.fit >= 70 && r.readiness >= 50);
   assert.notEqual(r.tier, "A");
+});
+
+test("no 'single location' or 'not hiring' points when no page was read", () => {
+  const r = scoreLead(lead(), sig({ pages: [] }), box, 2026);
+  assert.ok(!r.reasons.some((x) => x.text === "Single location" || x.text === "Not hiring"));
 });
