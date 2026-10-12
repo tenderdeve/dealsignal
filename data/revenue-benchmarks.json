@@ -1,0 +1,112 @@
+{
+ "all": {
+  "naics": "--",
+  "label": "Total",
+  "revenuePerEmployee": 374583,
+  "firms": 6395635,
+  "revenuePerFirm": {
+   "emp5to9": 1578700,
+   "emp10to19": 3085320,
+   "under20": 1004123
+  }
+ },
+ "roofing": {
+  "naics": "238160",
+  "label": "Roofing Contractors",
+  "revenuePerEmployee": 335532,
+  "firms": 24044,
+  "revenuePerFirm": {
+   "emp5to9": 2164947,
+   "emp10to19": 4265212,
+   "under20": 1277891
+  }
+ },
+ "electrical": {
+  "naics": "238210",
+  "label": "Electrical Contractors and Other Wiring Installation Contractors",
+  "revenuePerEmployee": 260108,
+  "firms": 79611,
+  "revenuePerFirm": {
+   "emp5to9": 1271502,
+   "emp10to19": 2913483,
+   "under20": 866175
+  }
+ },
+ "hvac_plumbing": {
+  "naics": "238220",
+  "label": "Plumbing, Heating, and Air-Conditioning Contractors",
+  "revenuePerEmployee": 260272,
+  "firms": 107004,
+  "revenuePerFirm": {
+   "emp5to9": 1348756,
+   "emp10to19": 2960335,
+   "under20": 921302
+  }
+ },
+ "painting": {
+  "naics": "238320",
+  "label": "Painting and Wall Covering Contractors",
+  "revenuePerEmployee": 172155,
+  "firms": 37830,
+  "revenuePerFirm": {
+   "emp5to9": 1057531,
+   "emp10to19": 2269611,
+   "under20": 529958
+  }
+ },
+ "accounting": {
+  "naics": "541211",
+  "label": "Offices of Certified Public Accountants",
+  "revenuePerEmployee": 263807,
+  "firms": 50885,
+  "revenuePerFirm": {
+   "emp5to9": 944405,
+   "emp10to19": 2000227,
+   "under20": 570862
+  }
+ },
+ "pest_control": {
+  "naics": "561710",
+  "label": "Exterminating and Pest Control Services",
+  "revenuePerEmployee": 139825,
+  "firms": 13603,
+  "revenuePerFirm": {
+   "emp5to9": 736951,
+   "emp10to19": 1587316,
+   "under20": 479928
+  }
+ },
+ "janitorial": {
+  "naics": "561720",
+  "label": "Janitorial Services",
+  "revenuePerEmployee": 69335,
+  "firms": 62970,
+  "revenuePerFirm": {
+   "emp5to9": 535924,
+   "emp10to19": 1006008,
+   "under20": 341723
+  }
+ },
+ "landscaping": {
+  "naics": "561730",
+  "label": "Landscaping Services",
+  "revenuePerEmployee": 152919,
+  "firms": 114842,
+  "revenuePerFirm": {
+   "emp5to9": 933160,
+   "emp10to19": 1879235,
+   "under20": 527638
+  }
+ },
+ "auto_repair": {
+  "naics": "811111",
+  "label": "General Automotive Repair",
+  "revenuePerEmployee": 185960,
+  "firms": 79429,
+  "revenuePerFirm": {
+   "emp5to9": 1105407,
+   "emp10to19": 2280743,
+   "under20": 677344
+  }
+ }
+}
