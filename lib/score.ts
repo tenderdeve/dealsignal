@@ -116,6 +116,7 @@ export function scoreLead(lead: Lead, s: Signals | null, box: BuyBox, now = new 
   }
 
   if (s?.siteStatus === "blocked") add("ready", "neutral", "Site blocks automated checks — verify manually");
+  if (s?.siteStatus === "moved") add("ready", "neutral", `Website now redirects to ${s.movedTo} — verify manually`);
 
   // --- fit: does it match the buy-box? ---
   let fit = 0;

@@ -34,15 +34,16 @@ export async function chat(system: string, user: string, opts: { json?: boolean;
     if (!res) return null;
     if (res.status === 429) {
       // Every model tried once and all busy: wait before the second round.
-      if ((attempt + 1) % list.length === 0) {
+      const last = attempt === list.length * 2 - 1;
+      if (!last && (attempt + 1) % list.length === 0) {
         const wait = Math.min(Number(res.headers.get("retry-after")) || 5, 20);
         await new Promise((r) => setTimeout(r, wait * 1000));
       }
       continue;
     }
     if (!res.ok) continue;
-    const data = await res.json();
-    const text = (data.choices?.[0]?.message?.content as string | undefined)?.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    const data = await res.json().catch(() => null);
+    const text = (data?.choices?.[0]?.message?.content as string | undefined)?.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     if (text) return text;
   }
   return null;

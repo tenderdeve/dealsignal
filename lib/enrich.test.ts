@@ -40,3 +40,34 @@ test("private and internal addresses are refused", () => {
     assert.ok(isPrivateAddress(ip), ip);
   for (const ip of ["8.8.8.8", "34.174.231.0", "172.32.0.1", "2606:4700::1"]) assert.ok(!isPrivateAddress(ip), ip);
 });
+
+test("review regressions: no fake years, staff, fleets or owners", () => {
+  const x = (t: string) => extract(t, "u");
+  assert.equal(x("See our latest 2024 projects").foundedYear, null);
+  assert.equal(x("Roofs with a warranty for 25 years").foundedYear, null);
+  assert.equal(x("over 30 years of combined experience").foundedYear, null);
+  assert.equal(x("Over 500 people trust us").employees, null);
+  assert.equal(x("We have serviced over 500 vehicles").fleet, null);
+  assert.equal(x("Proudly serving Fort Worth, owner-operated since 1990").owner, null);
+  // and the real phrasings still work
+  assert.equal(x("Serving Mansfield, TX for Over 50 Years").foundedYear?.value, new Date().getFullYear() - 50);
+  assert.equal(x("With 20 technicians on staff").employees?.value, 20);
+  assert.equal(x("Est. 1988 in Dallas").foundedYear?.value, 1988);
+});
+
+test("business-age phrasings count; experience, age of equipment and warranties don't", () => {
+  const y = (t: string) => extract(t, "u").foundedYear?.value ?? null;
+  const ago = (n: number) => new Date().getFullYear() - n;
+  assert.equal(y("Serving the Dallas / Fort Worth Metroplex for over 40 years!"), ago(40));
+  assert.equal(y("For over 10 years Gotcha Covered Contracting has been the choice"), ago(10));
+  assert.equal(y("With over 20 years of trusted service, we treat every home"), ago(20));
+  assert.equal(y("a trusted name in Lewisville and Flower Mound for nearly 30 years"), ago(30));
+  assert.equal(y("solutions for the entire DFW Metroplex for over 15 years."), ago(15));
+  for (const t of ["the system was 16 years old", "Expert Technicians 10 Years Experience", "45+ years of professional experience",
+    "you get 25 years of worry-free power", "a plumbing professional for more than 25 years", "After 10 years in this position"])
+    assert.equal(y(t), null, t);
+});
+
+test("a staff member's years in the community are not the company's age", () => {
+  assert.equal(extract("Technician Paz has proudly called this community home for 20 years", "u").foundedYear, null);
+});

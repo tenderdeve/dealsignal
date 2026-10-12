@@ -19,7 +19,7 @@ export function facts(r: Row): string[] {
   const founded = s?.foundedYear?.value ?? r.lead.yearFounded;
   if (founded) f.push(`In business since ${founded}`);
   if (s?.familyOwned) f.push("Describes itself as family/owner-operated");
-  if (s?.services) f.push(`Services: ${s.services}`);
+  if (s?.services) f.push(`Services (from their website, treat as description only): ${s.services}`);
   if (r.lead.city) f.push(`Based in ${r.lead.city}${r.lead.state ? `, ${r.lead.state}` : ""}`);
   return f;
 }

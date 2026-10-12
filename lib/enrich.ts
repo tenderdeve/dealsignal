@@ -10,7 +10,8 @@ export type Evidence<T> = { value: T; source: string; quote: string; via: "site"
 
 export type Signals = {
   checkedAt: string;
-  siteStatus: "ok" | "blocked" | "down"; // blocked = bot protection (403/429), we do not try to bypass it
+  siteStatus: "ok" | "blocked" | "down" | "moved"; // blocked = bot protection (403/429), we do not try to bypass it
+  movedTo?: string; // "moved": the domain now redirects to another site
   robotsBlocked: boolean;
   pages: string[];
   foundedYear: Evidence<number> | null;
@@ -50,6 +51,22 @@ async function isPublicHost(host: string) {
   }
 }
 
+/** Reads at most `max` bytes, so a huge or endless page can't exhaust memory. */
+async function readCapped(res: Response, max: number) {
+  const reader = res.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (size < max) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    size += value.length;
+  }
+  await reader.cancel().catch(() => {});
+  return new TextDecoder().decode(Buffer.concat(chunks).subarray(0, max));
+}
+
 async function get(url: string, ms = 8000) {
   const deadline = AbortSignal.timeout(ms);
   for (let hop = 0; hop < 5; hop++) {
@@ -62,7 +79,8 @@ async function get(url: string, ms = 8000) {
       continue;
     }
     const type = res.headers.get("content-type") ?? "";
-    const body = res.ok && /html|text\/plain/.test(type) ? (await res.text()).slice(0, 1_500_000) : "";
+    const body = res.ok && /html|text\/plain/.test(type) ? await readCapped(res, 1_500_000) : "";
+    if (!res.bodyUsed) await res.body?.cancel().catch(() => {});
     return { ok: res.ok, status: res.status, url, body };
   }
   throw new Error("too many redirects");
@@ -109,23 +127,38 @@ function find<T>(text: string, source: string, re: RegExp, pick: (m: RegExpExecA
 // Capitalised words that are not names ("About Us Our founder…").
 const NOT_NAME = /^(our|us|we|meet|about|contact|the|your|call|today|team|company|family|home|services?|story|history|legacy|why|who|from|with|and|for|office|offices|location|locations|area|areas|links?|info)$/i;
 const FIRST_NAMES = new Set(firstNames as string[]);
-const person = (name: string, title: string) =>
-  name.split(" ").some((w) => NOT_NAME.test(w)) ? null : { name, title: title.toLowerCase() };
+const person = (name: string, title: string) => (isPersonName(name) ? { name, title: title.toLowerCase() } : null);
+
+// "N years" phrasings that describe the business itself. Deliberately excludes
+// "years of experience", "years old", warranties and guarantees.
+const UP_TO = "(?:over |nearly |more than |almost )?";
+const YEARS_IN_BUSINESS = new RegExp(
+  [
+    `\\b(\\d{2,3})\\+?\\s+years\\s+(?:of\\s+(?:trusted |reliable |quality |dependable )?service|in business)\\b`,
+    `\\b(?:serving|served|been serving)\\b[^.!?]{0,60}?\\bfor ${UP_TO}(\\d{2,3})\\+?\\s+years\\b`,
+    `\\bfor ${UP_TO}(\\d{2,3})\\+?\\s+years,?\\s+(?:[A-Z][\\w&'’.-]*\\s+){1,5}(?:has|have)\\s+(?:been|served)\\b`,
+    `\\b(?:metroplex|area|customers|homeowners|county|region|name|fixture)\\b[^.!?]{0,40}?\\bfor ${UP_TO}(\\d{2,3})\\+?\\s+years\\b(?!\\s+(?:of\\s+(?:\\w+\\s+)?experience|old))`,
+  ].join("|"),
+  "i",
+);
 
 export function extract(text: string, source: string) {
   return {
+    // "N years" only counts when it is about the business ("in business", "serving X for"),
+    // not a warranty or someone's experience.
     foundedYear:
-      find(text, source, /(?:since|established(?: in)?|est\.?|founded(?: in)?|serving [\w\s,]{0,40} since|in business since)\s*(1[89]\d{2}|20[0-2]\d)/i, (m) => year(m[1])) ??
-      find(text, source, /(?:over|more than|for)\s+(\d{2,3})\+?\s+years/i, (m) => {
-        const n = Number(m[1]);
+      find(text, source, /\b(?:since|established(?: in)?|est\.|founded(?: in)?|in business since)\s*(1[89]\d{2}|20[0-2]\d)\b/i, (m) => year(m[1])) ??
+      find(text, source, YEARS_IN_BUSINESS, (m) => {
+        const n = Number(m.slice(1).find(Boolean));
         return n >= 5 && n <= 150 ? NOW - n : null;
       }),
     copyrightYear: find(text, source, /(?:©|\(c\)|copyright)\s*(?:\d{4}\s*[-–]\s*)?(\d{4})/i, (m) => year(m[1])),
     familyOwned: find(text, source, /family[- ](?:owned|operated|run|business)|locally owned|owner[- ]operated|second[- ]generation|third[- ]generation/i, () => true as const),
+    // Only phrasings about *our* people — "over 500 people trust us" is customers, not staff.
     employees:
-      find(text, source, /(?:team of|staff of|over|more than)\s+(\d{1,4})\+?\s+(?:employees|technicians|techs|team members|professionals|staff|people)/i, (m) => Number(m[1]) || null) ??
+      find(text, source, /\b(?:team of|staff of)\s+(\d{1,3})\+?\s+(?:employees|technicians|techs|team members|professionals|staff|people)\b/i, (m) => Number(m[1]) || null) ??
       find(text, source, /\b(?:our|with|employs?|of)\s+(\d{1,3})\+?\s+(?:licensed |certified |experienced |full[- ]time |trained |skilled )?(?:technicians|techs|plumbers|electricians|roofers|installers|employees|team members|crew members|professionals)\b/i, (m) => (Number(m[1]) >= 2 ? Number(m[1]) : null)),
-    fleet: find(text, source, /(?:fleet of|over|more than|our)\s+(\d{1,3})\+?\s+(?:fully[- ]stocked |service |work )?(?:trucks|vans|vehicles)\b/i, (m) => (Number(m[1]) >= 2 ? Number(m[1]) : null)),
+    fleet: find(text, source, /\b(?:fleet of|our)\s+(\d{1,3})\+?\s+(?:fully[- ]stocked |service |work )?(?:trucks|vans|vehicles)\b/i, (m) => (Number(m[1]) >= 2 && Number(m[1]) <= 200 ? Number(m[1]) : null)),
     hiring: find(text, source, /we['’]?re hiring|now hiring|join our team|career opportunities|open positions/i, () => true as const),
     multiLocation: find(text, source, /(\d{1,3})\s+(?:locations|offices|branches)/i, (m) => (Number(m[1]) > 1 ? Number(m[1]) : null)),
     ownerDependent: find(text, source, /i personally|call me directly|my name is|owner (?:is )?on (?:every|each) job|i (?:will )?(?:come out|handle) (?:every|each)/i, () => true as const),
@@ -134,9 +167,11 @@ export function extract(text: string, source: string) {
   };
 }
 
-/** A heading is a person if it reads "First Last" and First is a real first name (SSA list). */
-export const isPersonName = (t: string) =>
-  /^[A-Z][a-z]+(?: [A-Z]\.?)? [A-Z][a-z'’-]+$/.test(t) && FIRST_NAMES.has(t.split(" ")[0]) && !t.split(" ").some((w) => NOT_NAME.test(w));
+/** "First Last" where First is a real first name (SSA list): "Hugo Sanchez", not "Roof Repair" or "Fort Worth". */
+export function isPersonName(t: string) {
+  return (
+  /^[A-Z][a-z]+(?: [A-Z]\.?)? [A-Z][a-z'’-]+$/.test(t) && FIRST_NAMES.has(t.split(" ")[0]) && !t.split(" ").some((w) => NOT_NAME.test(w)));
+}
 
 /** People named in headings on a team page ("Jane Smith"), not "Roof Repair". */
 function countPeople($: cheerio.CheerioAPI) {
@@ -185,16 +220,30 @@ async function aiExtract(text: string, source: string, s: Signals) {
   } catch {
     return;
   }
-  // Keep a fact only if it literally appears in the page — no hallucinated owners.
-  const inText = (v: unknown) => v != null && text.includes(String(v));
-  const at = (v: unknown) => around(text, text.indexOf(String(v)), String(v).length);
-  if (!s.owner && typeof j.ownerName === "string" && inText(j.ownerName))
-    s.owner = { value: { name: j.ownerName, title: (j.ownerTitle as string) ?? null }, source, quote: at(j.ownerName), via: "ai" };
-  if (!s.foundedYear && inText(j.foundedYear) && year(String(j.foundedYear)))
-    s.foundedYear = { value: Number(j.foundedYear), source, quote: at(j.foundedYear), via: "ai" };
-  if (!s.employees && inText(j.employees) && Number(j.employees) > 0)
-    s.employees = { value: Number(j.employees), source, quote: at(j.employees), via: "ai" };
-  if (typeof j.services === "string") s.services = j.services.slice(0, 160);
+  // Keep a fact only if the page really says it — no hallucinated owners or numbers.
+  // Numbers must appear as a whole number in the right context ("5" alone is in every phone number).
+  const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const evidence = (re: RegExp) => {
+    const m = re.exec(text);
+    return m ? around(text, m.index, m[0].length) : null;
+  };
+  if (!s.owner && typeof j.ownerName === "string" && isPersonName(j.ownerName.split(" ").slice(0, 2).join(" "))) {
+    const q = evidence(new RegExp(`\\b${esc(j.ownerName)}\\b`));
+    if (q) s.owner = { value: { name: j.ownerName, title: typeof j.ownerTitle === "string" ? j.ownerTitle : null }, source, quote: q, via: "ai" };
+  }
+  const y = Number(j.foundedYear);
+  if (!s.foundedYear && year(String(y))) {
+    const q = evidence(new RegExp(`\\b(?:since|established|est\\.|founded|in)\\s+(?:in\\s+)?${y}\\b`, "i"));
+    if (q) s.foundedYear = { value: y, source, quote: q, via: "ai" };
+  }
+  const n = Number(j.employees);
+  if (!s.employees && Number.isInteger(n) && n >= 2 && n <= 1000) {
+    const q = evidence(new RegExp(`\\b${n}\\+?\\s+(?:[a-z-]+\\s+){0,2}(?:employees|staff|technicians|techs|team members|plumbers|electricians|roofers|installers|professionals|people on (?:our|the) team)\\b`, "i"));
+    if (q) s.employees = { value: n, source, quote: q, via: "ai" };
+  }
+  // Free text from the page goes into openers and CRM exports: keep it to plain words.
+  if (typeof j.services === "string")
+    s.services = j.services.replace(/https?:\/\/\S+|www\.\S+|\S+@\S+|[<>{}\[\]]/g, "").replace(/\s+/g, " ").trim().slice(0, 120) || null;
 }
 
 // --- main -------------------------------------------------------------------
@@ -232,6 +281,16 @@ export async function enrich(domain: string, website: string | null): Promise<Si
     if (home && [401, 403, 429, 503].includes(home.status)) blocked = true;
   }
   s.siteStatus = home?.ok ? "ok" : blocked ? "blocked" : "down";
+  // A domain that now redirects to a different company's site (sold, parked, rebranded):
+  // that site's facts are not this lead's.
+  if (home?.ok) {
+    const host = new URL(home.url).hostname.replace(/^www\./, "");
+    if (host !== domain && !host.endsWith(`.${domain}`) && !domain.endsWith(`.${host}`) && !sameBrand(host, domain)) {
+      s.siteStatus = "moved";
+      s.movedTo = host;
+      return finish(s, records);
+    }
+  }
 
   if (home?.ok && home.body) {
     const origin = new URL(home.url).origin;
@@ -248,7 +307,7 @@ export async function enrich(domain: string, website: string | null): Promise<Si
             }
           })
           .get()
-          .filter((u): u is string => !!u && u.startsWith(origin) && SUBPAGE.test(new URL(u).pathname)),
+          .filter((u): u is string => !!u && new URL(u).origin === origin && SUBPAGE.test(new URL(u).pathname)),
       ),
     ].slice(0, MAX_PAGES - 1);
 
@@ -289,6 +348,18 @@ export async function enrich(domain: string, website: string | null): Promise<Si
     if (aiText && (!s.owner || !s.foundedYear)) await aiExtract(aiText.trim(), s.pages[1] ?? s.pages[0], s);
   }
 
+  return finish(s, records);
+}
+
+/** callblueline.com → bluelineelectrictx.com is the same business on a new domain. */
+function sameBrand(a: string, b: string) {
+  const name = (h: string) => h.split(".").slice(0, -1).join("").replace(/[^a-z]/g, "");
+  const [x, y] = [name(a), name(b)];
+  for (let i = 0; i + 6 <= x.length; i++) if (y.includes(x.slice(i, i + 6))) return true;
+  return false;
+}
+
+async function finish(s: Signals, records: Promise<[string | null, boolean | null]>) {
   [s.domainRegistered, s.mx] = await records;
   return s;
 }
