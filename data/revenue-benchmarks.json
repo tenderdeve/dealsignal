@@ -1,0 +1,62 @@
+{
+ "all": {
+  "naics": "--",
+  "label": "Total",
+  "revenuePerEmployee": 374583,
+  "firms": 6395635
+ },
+ "roofing": {
+  "naics": "238160",
+  "label": "Roofing Contractors",
+  "revenuePerEmployee": 335532,
+  "firms": 24044
+ },
+ "electrical": {
+  "naics": "238210",
+  "label": "Electrical Contractors and Other Wiring Installation Contractors",
+  "revenuePerEmployee": 260108,
+  "firms": 79611
+ },
+ "hvac_plumbing": {
+  "naics": "238220",
+  "label": "Plumbing, Heating, and Air-Conditioning Contractors",
+  "revenuePerEmployee": 260272,
+  "firms": 107004
+ },
+ "painting": {
+  "naics": "238320",
+  "label": "Painting and Wall Covering Contractors",
+  "revenuePerEmployee": 172155,
+  "firms": 37830
+ },
+ "accounting": {
+  "naics": "541211",
+  "label": "Offices of Certified Public Accountants",
+  "revenuePerEmployee": 263807,
+  "firms": 50885
+ },
+ "pest_control": {
+  "naics": "561710",
+  "label": "Exterminating and Pest Control Services",
+  "revenuePerEmployee": 139825,
+  "firms": 13603
+ },
+ "janitorial": {
+  "naics": "561720",
+  "label": "Janitorial Services",
+  "revenuePerEmployee": 69335,
+  "firms": 62970
+ },
+ "landscaping": {
+  "naics": "561730",
+  "label": "Landscaping Services",
+  "revenuePerEmployee": 152919,
+  "firms": 114842
+ },
+ "auto_repair": {
+  "naics": "811111",
+  "label": "General Automotive Repair",
+  "revenuePerEmployee": 185960,
+  "firms": 79429
+ }
+}
