@@ -60,15 +60,15 @@ With no company-specific evidence, the app shows what a **typical** small firm i
 
 ## Results on the sample list
 
-`public/sample-saasquatch-dfw.csv` — 106 real Dallas–Fort Worth home-service businesses in SaaSquatch's export format (from OpenStreetMap; see [`data/README.md`](data/README.md)). Numbers are from one run; they shift slightly between runs because live websites go up and down.
+`public/sample-saasquatch-dfw.csv` — 106 real Dallas–Fort Worth home-service businesses in SaaSquatch's export format (from OpenStreetMap; see [`data/README.md`](data/README.md)). Numbers are from one run; they shift slightly between runs because live websites go up and down, and when the free AI tier is busy a few companies are filled in on the next run instead.
 
 | | |
 |---|---|
 | Rows uploaded | 106 |
 | Unique companies after merging duplicates | 88 |
 | Dead websites dropped | 6 |
-| Tier A / B / C | 23 / 25 / 34 |
-| Year founded known | 11% → 49% |
+| Tier A / B / C | 23 / 24 / 35 |
+| Year founded known | 11% → 48% |
 | Owner name known | 0% → 16% |
 | Contact email known | 0% → 24% |
 | Revenue from the company's own headcount | 0% → 9% (the rest get a labelled industry-typical range) |
