@@ -62,15 +62,16 @@ export default function Home() {
   async function start() {
     if (!upload) return;
     setBusy(true);
+    setError(null);
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileName: upload.name, rows: upload.rows, buyBox: box }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!res?.ok || !data?.id) {
       setBusy(false);
-      return setError(data.error ?? "Upload failed");
+      return setError(data?.error ?? "Couldn't start. Check your connection and try again.");
     }
     router.push(`/jobs/${data.id}`);
   }
@@ -97,7 +98,7 @@ export default function Home() {
                 onDragOver={(e) => (e.preventDefault(), setDrag(true))}
                 onDragLeave={() => setDrag(false)}
                 onDrop={(e) => (e.preventDefault(), setDrag(false), onFile(e.dataTransfer.files[0]))}
-                className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition ${drag ? "border-brand bg-brand-soft" : "border-line hover:border-muted"}`}
+                className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/30 ${drag ? "border-brand bg-brand-soft" : "border-line hover:border-muted"}`}
               >
                 <span className="font-medium">Drop a CSV here, or click to choose one</span>
                 <span className="mt-1 text-sm text-muted">SaaSquatch exports work as they are. Any CSV with a company column works too.</span>

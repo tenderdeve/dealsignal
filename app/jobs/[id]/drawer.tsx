@@ -36,12 +36,22 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
   async function write() {
     setWriting(true);
     setErr(null);
-    const res = await fetch(`/api/leads/${row.id}/opener`, { method: "POST" });
-    const d = await res.json();
+    const res = await fetch(`/api/leads/${row.id}/opener`, { method: "POST" }).catch(() => null);
+    const d = await res?.json().catch(() => null);
     setWriting(false);
-    if (!res.ok) return setErr(d.error);
+    if (!res?.ok || !d?.opener) return setErr(d?.error ?? "Couldn't write an opener right now. Try again.");
     setOpener(d.opener);
     onOpener();
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(opener!);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setErr("Couldn't copy. Select the text and copy it manually.");
+    }
   }
 
   const domainFacts = [
@@ -56,6 +66,7 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
         className="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto border-l border-line bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label={l.company}
       >
         <div className="flex items-start justify-between gap-3">
@@ -66,7 +77,7 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
             </div>
             <p className="mt-0.5 text-sm text-muted">{[l.industry, [l.street, l.city, l.state].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}</p>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-muted hover:bg-panel hover:text-ink" aria-label="Close">✕</button>
+          <button autoFocus onClick={onClose} className="rounded p-1 text-muted hover:bg-panel hover:text-ink" aria-label="Close">✕</button>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-3 rounded-lg bg-panel p-3 text-xs">
@@ -87,10 +98,7 @@ export function LeadDrawer({ row, onClose, onOpener }: { row: Row; onClose: () =
             <div className="mt-2 rounded-lg border border-line bg-panel p-3">
               <p className="whitespace-pre-wrap text-sm">{opener}</p>
               <div className="mt-2 flex gap-3 text-xs">
-                <button
-                  onClick={() => (navigator.clipboard.writeText(opener), setCopied(true), setTimeout(() => setCopied(false), 1500))}
-                  className="font-medium text-brand hover:underline"
-                >
+                <button onClick={copy} className="font-medium text-brand hover:underline">
                   {copied ? "Copied ✓" : "Copy"}
                 </button>
                 <button onClick={write} disabled={writing} className="text-muted hover:text-ink">{writing ? "Writing…" : "Rewrite"}</button>

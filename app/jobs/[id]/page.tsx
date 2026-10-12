@@ -25,6 +25,7 @@ export default function JobPage() {
   const [filters, setFilters] = useState<string[]>([]);
   const [open, setOpen] = useState<Row | null>(null);
   const [editBox, setEditBox] = useState<BuyBox | null>(null);
+  const [boxError, setBoxError] = useState<string | null>(null);
   const running = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -70,10 +71,20 @@ export default function JobPage() {
   }, [data, tab, query, filters]);
 
   async function saveBox() {
-    await fetch(`/api/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ buyBox: editBox }) });
+    const res = await fetch(`/api/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ buyBox: editBox }) }).catch(() => null);
+    if (!res?.ok) return setBoxError("Couldn't save the buy-box. Try again.");
+    setBoxError(null);
     setEditBox(null);
     refresh();
   }
+
+  // Esc closes the buy-box dialog, like the lead drawer.
+  useEffect(() => {
+    if (!editBox) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setEditBox(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [editBox]);
 
   if (missing) return <main className="mx-auto max-w-7xl px-6 py-16 text-muted">This list doesn&apos;t exist (or was deleted).</main>;
   if (!data) return <main className="mx-auto max-w-7xl px-6 py-16 text-muted">Loading…</main>;
@@ -164,6 +175,7 @@ export default function JobPage() {
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <input
+          aria-label="Search leads"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search company, city, website"
@@ -206,7 +218,10 @@ export default function JobPage() {
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <TierBadge tier={r.score.tier} />
-                    <span className="font-medium">{r.lead.company}</span>
+                    {/* The row is clickable for mouse users; this button makes it reachable by keyboard. */}
+                    <button onClick={(e) => (e.stopPropagation(), setOpen(r))} className="text-left font-medium hover:underline">
+                      {r.lead.company}
+                    </button>
                   </div>
                   <div className="mt-0.5 text-xs text-muted">
                     {[r.lead.industry, r.lead.city].filter(Boolean).join(" · ")}
@@ -252,11 +267,12 @@ export default function JobPage() {
 
       {editBox && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-black/40 p-4" onClick={() => setEditBox(null)}>
-          <div className="w-full max-w-xl rounded-xl border border-line bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Edit buy-box">
-            <h2 className="mb-4 font-semibold">Edit buy-box</h2>
+          <div className="w-full max-w-xl rounded-xl border border-line bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="buybox-title">
+            <h2 id="buybox-title" className="mb-4 font-semibold">Edit buy-box</h2>
             <BuyBoxForm value={editBox} onChange={setEditBox} industries={industries} />
+            {boxError && <p className="mt-4 text-sm text-drop">{boxError}</p>}
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setEditBox(null)} className="rounded-md px-3 py-2 text-sm text-muted hover:text-ink">Cancel</button>
+              <button autoFocus onClick={() => setEditBox(null)} className="rounded-md px-3 py-2 text-sm text-muted hover:text-ink">Cancel</button>
               <button onClick={saveBox} className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-paper">Re-rank</button>
             </div>
           </div>
