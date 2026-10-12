@@ -67,9 +67,9 @@ With no company-specific evidence, the app shows what a **typical** small firm i
 | Rows uploaded | 106 |
 | Unique companies after merging duplicates | 88 |
 | Dead websites dropped | 6 |
-| Tier A / B / C | 25 / 24 / 33 |
-| Year founded known | 11% → 51% |
-| Owner name known | 0% → 17% |
+| Tier A / B / C | 23 / 25 / 34 |
+| Year founded known | 11% → 49% |
+| Owner name known | 0% → 16% |
 | Contact email known | 0% → 24% |
 | Revenue from the company's own headcount | 0% → 9% (the rest get a labelled industry-typical range) |
 | Time (cold, 88 sites) | ~3 min · re-runs are instant from cache |
@@ -107,6 +107,8 @@ flowchart LR
 
 - **Rules first, AI second.** Regex rules extract founding year, ownership, owner name, employees, hiring and copyright year. The LLM only runs when rules miss the owner or founding year.
 - **No hallucinated facts.** An AI-extracted owner name, year or headcount is kept only if it appears verbatim in the page text, and the quote is stored as evidence.
+- **Moved sites.** If a domain now redirects to a different business (sold, parked, rebranded into something else), that site's facts are not used and the lead is flagged; a move to a domain carrying the same name is treated as the same business.
+- **Shared hosts.** A Facebook, Yelp or Google listing given as the "website" is never used to merge leads or crawled as the company's site.
 - **Dead vs blocked.** A site that does not resolve or refuses connections is *dropped*. A site behind bot protection (HTTP 401/403/429/503) is *kept* and flagged "verify manually" — it is not treated as closed.
 - **Deduplication** by website domain, falling back to normalised name + city.
 
@@ -121,6 +123,7 @@ flowchart LR
 
 - **No SSRF.** Uploaded lists are untrusted, so every fetch (and every redirect hop, followed manually) is refused unless the host is a public domain name resolving only to public IPs — no IP literals, `localhost`, private ranges or cloud metadata addresses.
 - **Safe exports.** CSV cells that start with `=`, `+`, `-` or `@` are escaped, so scraped text can't run as a spreadsheet formula.
+- **Bounded work.** Pages are read up to 1.5 MB, one batch runs per job at a time, and openers are only reachable through their job's id.
 - **One bad site can't stall a list.** A crash while checking one company is logged and that lead is scored on its CSV data alone.
 - Inputs are validated at the API boundary (row cap, buy-box sanitising, id formats). Results are reachable only through their unguessable job link; there are no user accounts in this prototype.
 - Openers never speculate about an owner's age, health or retirement.
