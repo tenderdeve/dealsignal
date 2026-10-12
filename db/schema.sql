@@ -31,3 +31,12 @@ create table if not exists domain_cache (
   signals jsonb not null,
   fetched_at timestamptz not null default now()
 );
+
+-- Per-visitor usage counters, one row per (action+visitor, hour). Kept in the
+-- database because serverless instances don't share memory.
+create table if not exists rate_limits (
+  key text not null,
+  window_start timestamptz not null,
+  count int not null default 0,
+  primary key (key, window_start)
+);
