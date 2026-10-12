@@ -32,7 +32,11 @@ const SOCIAL = /\b(reviews?|rated|ratings?|awards?|award-winning|reputation)\b/i
 export const unbacked = (draft: string, r: Row) =>
   SOCIAL.test(draft) || (HISTORY.test(draft) && !r.signals?.foundedYear && !r.lead.yearFounded);
 
+// The route may run 120s; leave room to save and respond.
+const OPENER_BUDGET_MS = 90_000;
+
 export async function writeOpener(r: Row) {
+  const deadline = Date.now() + OPENER_BUDGET_MS;
   const f = facts(r);
   const user = [
     `Company: ${r.lead.company}`,
@@ -42,7 +46,7 @@ export async function writeOpener(r: Row) {
   ].join("\n");
   // Reject a draft that claims more than the facts support; try twice more.
   for (let i = 0; i < 3; i++) {
-    const draft = await chat(SYSTEM, user, { maxTokens: 700 });
+    const draft = await chat(SYSTEM, user, { maxTokens: 700, deadline });
     if (!draft) return null;
     if (!unbacked(draft, r)) return draft;
   }

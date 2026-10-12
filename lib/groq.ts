@@ -10,10 +10,13 @@ const models = () => [
   ...new Set([process.env.GROQ_MODEL || "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "openai/gpt-oss-120b"]),
 ];
 
-export async function chat(system: string, user: string, opts: { json?: boolean; maxTokens?: number } = {}) {
+/** `deadline` (epoch ms) caps the whole call, retries and waits included. */
+export async function chat(system: string, user: string, opts: { json?: boolean; maxTokens?: number; deadline?: number } = {}) {
   if (!aiEnabled()) return null;
   const list = models();
+  const left = () => (opts.deadline ?? Infinity) - Date.now();
   for (let attempt = 0; attempt < list.length * 2; attempt++) {
+    if (left() < 1000) return null;
     const model = list[attempt % list.length];
     const res = await fetch(URL, {
       method: "POST",
@@ -29,15 +32,16 @@ export async function chat(system: string, user: string, opts: { json?: boolean;
         ...(model.startsWith("openai/gpt-oss") && { reasoning_effort: "low" }),
         ...(opts.json && { response_format: { type: "json_object" } }),
       }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(Math.min(30_000, left())),
     }).catch(() => null);
     if (!res) return null;
     if (res.status === 429) {
       // Every model tried once and all busy: wait before the second round.
       const last = attempt === list.length * 2 - 1;
       if (!last && (attempt + 1) % list.length === 0) {
-        const wait = Math.min(Number(res.headers.get("retry-after")) || 5, 20);
-        await new Promise((r) => setTimeout(r, wait * 1000));
+        const wait = Math.min((Number(res.headers.get("retry-after")) || 5) * 1000, 20_000, left() - 1000);
+        if (wait <= 0) return null;
+        await new Promise((r) => setTimeout(r, wait));
       }
       continue;
     }
