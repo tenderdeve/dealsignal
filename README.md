@@ -4,6 +4,8 @@
 
 > Built for the Caprae Capital pre-screening challenge (5-hour build).
 
+**Live demo:** https://dealsignal-bay.vercel.app (click **"Use the sample"** to try it without a file)
+
 ## The problem
 
 SaaSquatch's users are **searchers**: people looking to buy and run one small business. A search returns hundreds or thousands of companies. Studying SaaSquatch's own demo videos showed where that leaves a searcher:
@@ -150,9 +152,12 @@ Click **"Use the sample"** on the home page to try it without a file.
 ```bash
 npx vercel link
 npx vercel env add GROQ_API_KEY production
+npx vercel env add GROQ_MODEL production      # optional, defaults to openai/gpt-oss-20b
 npx vercel env add DATABASE_URL production
 npx vercel --prod
 ```
+
+`vercel.json` pins the framework to Next.js, and `.vercelignore` keeps `.env*` files and local build output out of the upload. Run `npm run db:migrate` once against the production database before the first deploy.
 
 ## Project layout
 
