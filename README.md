@@ -4,7 +4,7 @@
 
 > Built for the Caprae Capital pre-screening challenge (5-hour build).
 
-**Live demo:** https://dealsignal-bay.vercel.app (click **"Use the sample"** to try it without a file)
+**Live demo:** https://dealsignal-bay.vercel.app (no file needed: click **"Use the sample of 106 Dallas–Fort Worth contractors"** on the home page)
 
 ## The problem
 
@@ -145,7 +145,7 @@ npm run dev                  # http://localhost:3000
 npm test                     # normalisation, extraction, scoring, opener and address-filter tests
 ```
 
-Click **"Use the sample"** on the home page to try it without a file.
+No file? Click **"Use the sample of 106 Dallas–Fort Worth contractors"** on the home page.
 
 ## Deploy
 
