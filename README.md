@@ -95,10 +95,10 @@ flowchart LR
 | Layer | Choice | Why |
 |---|---|---|
 | Framework | **Next.js 15** (App Router, TypeScript, Tailwind CSS 4) | One codebase for UI + API routes |
-| Hosting | **Vercel**, serverless functions (Node.js runtime), static assets on the CDN | Zero-ops, preview deploys |
+| Hosting | **Vercel**, serverless functions (Node.js runtime), static assets on the CDN | Zero-ops, scales to zero |
 | Cloud | Vercel on **AWS** (us-east-1), database on **AWS us-east-1** via Neon | App and DB in the same region |
 | Database | **Neon Postgres** (serverless), `@neondatabase/serverless` HTTP driver | No connection pool to manage from serverless functions |
-| Queue | None — the browser calls `/process` in a loop; leads are claimed with `UPDATE … FOR UPDATE SKIP LOCKED` | No worker or cron needed; safe if two tabs run at once; stuck leads are re-claimed after 2 min |
+| Queue | None — the browser calls `/process` in a loop; leads are claimed with `UPDATE … FOR UPDATE SKIP LOCKED` | No worker or cron needed; safe if two tabs run at once; stuck leads are re-claimed after 6 min |
 | Caching | `domain_cache` table, 7-day TTL, shared across uploads | Re-running or overlapping lists never hit the same site twice |
 | Rate limiting | `rate_limits` table, fixed one-hour windows per visitor | Works across serverless instances without adding a cache service |
 | Scores | Computed on read, not stored | Buy-box edits re-rank instantly |
@@ -178,9 +178,12 @@ lib/
   jobs.ts                     storage + batch worker
   groq.ts, opener.ts          LLM client and prompt
   ratelimit.ts                per-visitor hourly limits
+  *.test.ts                   unit tests (node:test via tsx)
 db/schema.sql                 jobs, leads, domain_cache, rate_limits
 data/                         Census revenue benchmarks + provenance
 scripts/                      sample-list builder, migration
+public/sample-saasquatch-dfw.csv   the sample list behind "Use the sample"
+vercel.json, .vercelignore    deploy config
 ```
 
 ## Limitations and next steps
