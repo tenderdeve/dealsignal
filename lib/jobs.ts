@@ -22,7 +22,7 @@ export async function createJob(fileName: string, buyBox: BuyBox, rowsIn: number
   return job.id as string;
 }
 
-/** Claims a few pending leads (or ones stuck >2 min) and enriches them. */
+/** Claims a few pending leads (or ones stuck >6 min) and enriches them. */
 export async function processBatch(jobId: string) {
   // One batch in flight per job: extra callers (another tab, a script firing requests
   // in parallel) just report progress instead of multiplying the crawling.
